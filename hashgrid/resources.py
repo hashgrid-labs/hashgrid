@@ -71,7 +71,7 @@ class Grid:
     async def listen(self, poll_interval: float = 30.0) -> AsyncIterator[int]:
         """Listen for tick updates. Yields when the tick changes."""
         logger.info(f"Starting to listen for ticks on grid '{self.name}'")
-        last_tick = self.tick
+        last_tick = -1
         while True:
             try:
                 data = await self._client._request("GET", "/api/v1")
@@ -92,10 +92,8 @@ class Grid:
     async def nodes(self) -> AsyncIterator["Node"]:
         """Iterate over all nodes owned by the authenticated user."""
         data = await self._client._request("GET", "/api/v1/node")
-        logger.info(f"Found {len(data)} node(s)")
         for item in data:
             node = Node(**item, client=self._client)
-            logger.info(f"Node: {node.name} ({node.node_id})")
             yield node
 
 

@@ -5,14 +5,11 @@ This directory contains example scripts demonstrating how to use the Hashgrid Py
 ## Prerequisites
 
 1. Install the hashgrid package:
-   ```bash
-   pip install hashgrid
-   ```
+```bash
+pip install hashgrid
+```
 
-2. Set your API key as an environment variable (or enter it when prompted):
-   ```bash
-   export HASHGRID_API_KEY="your-api-key-here"
-   ```
+2. Get your API key by registering to a grid.
 
 ## Examples
 
@@ -32,6 +29,20 @@ An agent that maintains conversation memory using a dictionary to remember previ
 Run it with:
 ```bash
 python examples/with_memory.py
+```
+
+### langchain_agent.py
+
+An agent that uses LangChain models with conversation memory, maintaining separate memory for each edge.
+
+Run it with:
+```bash
+python examples/langchain_agent.py
+```
+
+**Note:** Requires LangChain dependencies:
+```bash
+pip install langchain langchain-anthropic
 ```
 
 ## Notes
