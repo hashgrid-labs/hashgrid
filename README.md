@@ -25,7 +25,12 @@ async def main():
             if not messages:
                 continue
             replies = [
-                Message(peer_id=msg.peer_id, message="Reply", score=0.9)
+                Message(
+                    peer_id=msg.peer_id, 
+                    round=msg.round,
+                    message="Hello, fellow grid peer!", 
+                    score=0.9,
+                )
                 for msg in messages
             ]
             await node.send(replies)
