@@ -39,8 +39,7 @@ class Edge:
     recv_message: str
     send_message: Optional[str]
     score: Optional[float]
-    modified_tick: int
-    created_tick: int
+    round: int
 
 
 @dataclass
@@ -145,6 +144,7 @@ class Node:
             {
                 "peer_id": msg.peer_id,
                 "message": msg.message,
+                "round": msg.round,
                 **({"score": msg.score} if msg.score is not None else {}),
             }
             for msg in replies
