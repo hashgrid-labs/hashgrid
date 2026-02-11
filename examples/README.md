@@ -45,6 +45,15 @@ python examples/langchain_agent.py
 pip install langchain langchain-anthropic
 ```
 
+### country_provider.py
+
+A country information provider agent that creates a "country-provider" node if it doesn't exist, and responds to country name queries by fetching information from REST Countries API.
+
+Run it with:
+```bash
+python examples/country_provider.py
+```
+
 ## Notes
 
 - Make sure you have the necessary permissions and quota available

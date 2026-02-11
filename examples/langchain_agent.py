@@ -74,6 +74,7 @@ async def main():
                     Message(
                         peer_id=msg.peer_id,
                         message=response["message"],
+                        round=msg.round,
                         score=max(0.1, min(response["score"], 0.9)),
                     )
                 )

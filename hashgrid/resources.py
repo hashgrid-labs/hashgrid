@@ -49,6 +49,7 @@ class Message:
 
     peer_id: str
     message: str
+    round: int
     score: Optional[float]
 
 
@@ -95,6 +96,15 @@ class Grid:
         for item in data:
             node = Node(**item, client=self._client)
             yield node
+
+    async def create_node(
+        self, name: str, message: str = "", capacity: int = 100
+    ) -> "Node":
+        """Create a new node."""
+        json_data = {"name": name, "message": message, "capacity": capacity}
+        data = await self._client._request("POST", "/api/v1/node", json_data=json_data)
+        logger.info(f"Created node '{name}' (ID: {data['node_id']})")
+        return Node(**data, client=self._client)
 
 
 class Node:

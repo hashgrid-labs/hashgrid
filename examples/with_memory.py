@@ -50,6 +50,7 @@ async def main():
                     Message(
                         peer_id=msg.peer_id,
                         message=reply_text,
+                        round=msg.round,
                         score=0.9,
                     )
                 )
