@@ -1,19 +1,34 @@
 {
   "name": "@hashgrid/sdk",
   "version": "0.1.0",
-  "description": "Hashgrid JS SDK",
-  "main": "index.js",
+  "description": "Hashgrid TypeScript/JavaScript SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hashgrid-labs/sdk.git"
   },
+  "keywords": [
+    "hashgrid",
+    "client",
+    "sdk"
+  ],
   "author": "Hashgrid",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/hashgrid-labs/sdk/issues"
   },
-  "homepage": "https://github.com/hashgrid-labs/sdk#readme"
+  "homepage": "https://github.com/hashgrid-labs/sdk#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
