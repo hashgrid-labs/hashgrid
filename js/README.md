@@ -27,8 +27,8 @@ async function main() {
       const replies = messages.map((msg) =>
         new Message(
           msg.peer_id,
-          "Hello, fellow grid peer!",
           msg.round,
+          "Hello, fellow grid peer!",
           0.9
         )
       );

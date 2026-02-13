@@ -47,9 +47,9 @@ class Message:
     """Message resource."""
 
     peer_id: str
-    message: str
     round: int
-    score: Optional[float]
+    message: str = ""
+    score: Optional[float] = None
 
 
 @dataclass
@@ -57,6 +57,7 @@ class Status:
     """Status resource."""
 
     peer_id: str
+    round: int
     success: bool
 
 

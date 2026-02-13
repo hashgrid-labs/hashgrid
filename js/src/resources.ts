@@ -60,29 +60,31 @@ export class Edge {
 
 export class Message {
   peer_id: string;
-  message: string;
   round: number;
+  message: string;
   score: number | null;
 
   constructor(
     peer_id: string,
-    message: string,
     round: number,
+    message: string = "",
     score: number | null = null
   ) {
     this.peer_id = peer_id;
-    this.message = message;
     this.round = round;
+    this.message = message;
     this.score = score;
   }
 }
 
 export class Status {
   peer_id: string;
+  round: number;
   success: boolean;
 
-  constructor(peer_id: string, success: boolean) {
+  constructor(peer_id: string, round: number, success: boolean) {
     this.peer_id = peer_id;
+    this.round = round;
     this.success = success;
   }
 }
@@ -183,7 +185,7 @@ export class Node {
     );
     return data.map(
       (item: any) =>
-        new Message(item.peer_id, item.message, item.round, item.score ?? null)
+        new Message(item.peer_id, item.round, item.message, item.score ?? null)
     );
   }
 
@@ -205,7 +207,7 @@ export class Node {
       undefined,
       json_data
     );
-    return data.map((item: any) => new Status(item.peer_id, item.success));
+    return data.map((item: any) => new Status(item.peer_id, item.round, item.success));
   }
 
   async update(

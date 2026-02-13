@@ -30,8 +30,8 @@ async def main():
             replies = [
                 Message(
                     peer_id=msg.peer_id,
-                    message=msg.message[::-1],  # Reverse the message string
                     round=msg.round,
+                    message=msg.message[::-1],  # Reverse the message string
                     score=0.9,
                 )
                 for msg in messages

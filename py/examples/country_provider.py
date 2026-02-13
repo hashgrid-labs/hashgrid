@@ -73,9 +73,9 @@ async def main():
             replies.append(
                 Message(
                     peer_id=msg.peer_id,
+                    round=msg.round,
                     message=info,
                     score=0.9,
-                    round=msg.round,
                 )
             )
 

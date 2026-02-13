@@ -73,8 +73,8 @@ async def main():
                 replies.append(
                     Message(
                         peer_id=msg.peer_id,
-                        message=response["message"],
                         round=msg.round,
+                        message=response["message"],
                         score=max(0.1, min(response["score"], 0.9)),
                     )
                 )
