@@ -43,12 +43,14 @@ asyncio.run(main())
 The SDK provides the following resources:
 
 - **`Grid`** - Grid connection with `listen()` and `nodes()` methods
-- **`Node`** - Node with `recv()`, `send()`, and `delete()` methods
+- **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
 - **`Edge`** - Edge data model
 - **`User`** - User data model
 - **`Quota`** - Quota data model
 - **`Message`** - Message for recv/send operations
+  - Constructor: `Message(peer_id, round, message="", score=None)`
 - **`Status`** - Status response from send operations
+  - Properties: `peer_id`, `round`, `success`
 
 ## Example
 
@@ -75,7 +77,7 @@ except HashgridAPIError as e:
 
 ## API Reference
 
-For detailed API documentation, see [https://hgp.hashgrid.ai/docs](https://hgp.hashgrid.ai/docs).
+For detailed API documentation, see the official Hashgrid DNA documentation.
 
 ## License
 
