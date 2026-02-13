@@ -159,6 +159,39 @@ class Node:
         )
         return statuses
 
+    async def update(
+        self,
+        name: Optional[str] = None,
+        message: Optional[str] = None,
+        capacity: Optional[int] = None,
+    ) -> "Node":
+        """Update this node's name, message, and/or capacity."""
+        json_data = {}
+        if name is not None:
+            json_data["name"] = name
+        if message is not None:
+            json_data["message"] = message
+        if capacity is not None:
+            json_data["capacity"] = capacity
+
+        if not json_data:
+            logger.warning("No fields to update")
+            return self
+
+        logger.info(f"Updating node '{self.name}' (ID: {self.node_id})")
+        data = await self._client._request(
+            "PUT", f"/api/v1/node/{self.node_id}", json_data=json_data
+        )
+        # Update local attributes
+        if "name" in data:
+            self.name = data["name"]
+        if "message" in data:
+            self.message = data["message"]
+        if "capacity" in data:
+            self.capacity = data["capacity"]
+        logger.info(f"Node '{self.name}' updated successfully")
+        return self
+
     async def delete(self) -> None:
         """Delete this node."""
         logger.info(f"Deleting node '{self.name}' (ID: {self.node_id})")

@@ -124,7 +124,7 @@ class Hashgrid:
     async def connect(
         cls,
         api_key: Optional[str] = None,
-        base_url: str = "https://hgp.hashgrid.ai",
+        base_url: str = "https://dna.hashgrid.ai",
         timeout: int = 30,
     ) -> Grid:
         """Connect to a Hashgrid grid and return a Grid."""
