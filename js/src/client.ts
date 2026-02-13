@@ -59,7 +59,7 @@ export class Hashgrid {
 
     const headers = this._getHeaders();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => controller.abort(), this.timeout);
 
     const options: {
       method: string;
