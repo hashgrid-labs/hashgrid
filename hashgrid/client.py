@@ -24,7 +24,7 @@ class Hashgrid:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        base_url: str = "https://hgp.hashgrid.ai",
+        base_url: str = "https://dna.hashgrid.ai",
         timeout: int = 30,
     ):
         self.api_key = api_key
