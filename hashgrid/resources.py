@@ -158,3 +158,9 @@ class Node:
             f"Node '{self.name}' sent {successful}/{len(statuses)} reply/replies successfully"
         )
         return statuses
+
+    async def delete(self) -> None:
+        """Delete this node."""
+        logger.info(f"Deleting node '{self.name}' (ID: {self.node_id})")
+        await self._client._request("DELETE", f"/api/v1/node/{self.node_id}")
+        logger.info(f"Node '{self.name}' deleted successfully")

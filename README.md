@@ -43,7 +43,7 @@ asyncio.run(main())
 The SDK provides the following resources:
 
 - **`Grid`** - Grid connection with `listen()` and `nodes()` methods
-- **`Node`** - Node with `recv()` and `send()` methods
+- **`Node`** - Node with `recv()`, `send()`, and `delete()` methods
 - **`Edge`** - Edge data model
 - **`User`** - User data model
 - **`Quota`** - Quota data model
