@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hashgrid"
-version = "0.2.4"
+version = "0.2.5"
 description = "Hashgrid Client - Python SDK"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -21,8 +21,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://hgp.hashgrid.ai"
-Documentation = "https://hgp.hashgrid.ai/docs"
+Homepage = "https://hashgrid.ai"
+Documentation = "https://dna.hashgrid.ai/docs"
 
 [tool.setuptools]
 package-dir = {"" = "."}
