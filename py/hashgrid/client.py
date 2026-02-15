@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, AsyncIterator
 from urllib.parse import urljoin
 
 import httpx
@@ -52,7 +52,7 @@ class Hashgrid:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    async def _request(
+    async def request(
         self,
         method: str,
         endpoint: str,
@@ -120,6 +120,35 @@ class Hashgrid:
         except json.JSONDecodeError:
             return {"content": response.text}
 
+    async def stream(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> AsyncIterator[str]:
+        """Stream Server-Sent Events from an endpoint. Yields data values."""
+        if not self._client:
+            raise HashgridAPIError(
+                "Client not initialized. Use async context manager or await connect()"
+            )
+
+        url = urljoin(self.base_url, endpoint.lstrip("/"))
+        headers = self._get_headers()
+        headers["Accept"] = "text/event-stream"
+
+        async with self._client.stream(
+            method, url, headers=headers, params=params, json=json_data, timeout=None
+        ) as response:
+            response.raise_for_status()
+            buffer = ""
+            async for chunk in response.aiter_bytes():
+                buffer += chunk.decode("utf-8")
+                while "\n\n" in buffer:
+                    event, buffer = buffer.split("\n\n", 1)
+                    if event.startswith("data: "):
+                        yield event[6:].strip()
+
     @classmethod
     async def connect(
         cls,
@@ -131,7 +160,7 @@ class Hashgrid:
         logger.info(f"Connecting to grid at {base_url}")
         client = cls(api_key=api_key, base_url=base_url, timeout=timeout)
         await client.__aenter__()
-        data = await client._request("GET", "/api/v1")
+        data = await client.request("GET", "/api/v1")
         grid = Grid(name=data["name"], tick=data["tick"], client=client)
         logger.info(f"Connected to grid '{grid.name}' at tick {grid.tick}")
         return grid

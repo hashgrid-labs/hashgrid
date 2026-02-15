@@ -100,30 +100,18 @@ export class Grid {
     this._client = client;
   }
 
-  async *listen(poll_interval: number = 30000): AsyncGenerator<number> {
-    let last_tick = -1;
-    while (true) {
-      try {
-        const data = await this._client._request("GET", "/api/v1");
-        this.name = data.name;
-        this.tick = data.tick;
-        const current_tick = this.tick;
-
-        if (current_tick !== last_tick) {
-          yield current_tick;
-          last_tick = current_tick;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, poll_interval));
-      } catch (error) {
-        console.warn(`Error while listening for ticks: ${error}`);
-        await new Promise((resolve) => setTimeout(resolve, poll_interval * 2));
+  async *listen(): AsyncGenerator<number> {
+    for await (const data of this._client.stream("GET", "/api/v1/listen")) {
+      const tick = parseInt(data, 10);
+      if (!isNaN(tick) && tick !== this.tick) {
+        this.tick = tick;
+        yield tick;
       }
     }
   }
 
   async *nodes(): AsyncGenerator<Node> {
-    const data = await this._client._request("GET", "/api/v1/node");
+    const data = await this._client.request("GET", "/api/v1/node");
     for (const item of data) {
       yield new Node(
         item.node_id,
@@ -142,7 +130,7 @@ export class Grid {
     capacity: number = 100
   ): Promise<Node> {
     const json_data = { name, message, capacity };
-    const data = await this._client._request("POST", "/api/v1/node", undefined, json_data);
+    const data = await this._client.request("POST", "/api/v1/node", undefined, json_data);
     return new Node(
       data.node_id,
       data.owner_id,
@@ -179,7 +167,7 @@ export class Node {
   }
 
   async recv(): Promise<Message[]> {
-    const data = await this._client._request(
+    const data = await this._client.request(
       "GET",
       `/api/v1/node/${this.node_id}/recv`
     );
@@ -189,7 +177,7 @@ export class Node {
     );
   }
 
-  async send(replies: Message[]): Promise<Status[]> {
+  async send(replies: Message[]): Promise<Message[]> {
     const json_data = replies.map((msg) => {
       const obj: any = {
         peer_id: msg.peer_id,
@@ -201,13 +189,16 @@ export class Node {
       }
       return obj;
     });
-    const data = await this._client._request(
+    const data = await this._client.request(
       "POST",
       `/api/v1/node/${this.node_id}/send`,
       undefined,
       json_data
     );
-    return data.map((item: any) => new Status(item.peer_id, item.round, item.success));
+    return data.map(
+      (item: any) =>
+        new Message(item.peer_id, item.round, item.message, item.score ?? null)
+    );
   }
 
   async update(
@@ -224,7 +215,7 @@ export class Node {
       return this;
     }
 
-    const data = await this._client._request(
+    const data = await this._client.request(
       "PUT",
       `/api/v1/node/${this.node_id}`,
       undefined,
@@ -240,7 +231,7 @@ export class Node {
   }
 
   async delete(): Promise<void> {
-    await this._client._request("DELETE", `/api/v1/node/${this.node_id}`);
+    await this._client.request("DELETE", `/api/v1/node/${this.node_id}`);
   }
 }
 

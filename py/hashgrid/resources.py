@@ -69,30 +69,22 @@ class Grid:
         self.tick = tick
         self._client = client
 
-    async def listen(self, poll_interval: float = 30.0) -> AsyncIterator[int]:
-        """Listen for tick updates. Yields when the tick changes."""
-        logger.info(f"Starting to listen for ticks on grid '{self.name}'")
-        last_tick = -1
-        while True:
+    async def listen(self) -> AsyncIterator[int]:
+        """Listen for tick updates via Server-Sent Events. Yields when the tick changes."""
+        logger.info(f"Starting to listen for ticks on grid '{self.name}' via SSE")
+        async for data in self._client.stream("GET", "/api/v1/listen"):
             try:
-                data = await self._client._request("GET", "/api/v1")
-                self.name = data["name"]
-                self.tick = data["tick"]
-                current_tick = self.tick
-
-                if current_tick != last_tick:
-                    logger.info(f"Tick updated: {last_tick} -> {current_tick}")
-                    yield current_tick
-                    last_tick = current_tick
-
-                await asyncio.sleep(poll_interval)
-            except Exception as e:
-                logger.warning(f"Error while listening for ticks: {e}")
-                await asyncio.sleep(poll_interval * 2)
+                tick = int(data)
+                if tick != self.tick:
+                    logger.info(f"Tick updated: {self.tick} -> {tick}")
+                    self.tick = tick
+                    yield tick
+            except ValueError:
+                logger.warning(f"Invalid tick value in SSE: {data}")
 
     async def nodes(self) -> AsyncIterator["Node"]:
         """Iterate over all nodes owned by the authenticated user."""
-        data = await self._client._request("GET", "/api/v1/node")
+        data = await self._client.request("GET", "/api/v1/node")
         for item in data:
             node = Node(**item, client=self._client)
             yield node
@@ -102,7 +94,7 @@ class Grid:
     ) -> "Node":
         """Create a new node."""
         json_data = {"name": name, "message": message, "capacity": capacity}
-        data = await self._client._request("POST", "/api/v1/node", json_data=json_data)
+        data = await self._client.request("POST", "/api/v1/node", json_data=json_data)
         logger.info(f"Created node '{name}' (ID: {data['node_id']})")
         return Node(**data, client=self._client)
 
@@ -128,7 +120,7 @@ class Node:
 
     async def recv(self) -> List[Message]:
         """Get peers waiting for a response."""
-        data = await self._client._request("GET", f"/api/v1/node/{self.node_id}/recv")
+        data = await self._client.request("GET", f"/api/v1/node/{self.node_id}/recv")
         messages = [Message(**item) for item in data]
         if messages:
             logger.info(
@@ -136,8 +128,8 @@ class Node:
             )
         return messages
 
-    async def send(self, replies: List[Message]) -> List[Status]:
-        """Send replies to peers."""
+    async def send(self, replies: List[Message]) -> List[Message]:
+        """Send replies to peers. Returns the updated messages that were sent."""
         logger.info(
             f"Node '{self.name}' sending {len(replies)} reply/replies to peer(s)"
         )
@@ -150,15 +142,14 @@ class Node:
             }
             for msg in replies
         ]
-        data = await self._client._request(
+        data = await self._client.request(
             "POST", f"/api/v1/node/{self.node_id}/send", json_data=json_data
         )
-        statuses = [Status(**item) for item in data]
-        successful = sum(1 for s in statuses if s.success)
+        messages = [Message(**item) for item in data]
         logger.info(
-            f"Node '{self.name}' sent {successful}/{len(statuses)} reply/replies successfully"
+            f"Node '{self.name}' sent {len(messages)} reply/replies successfully"
         )
-        return statuses
+        return messages
 
     async def update(
         self,
@@ -180,7 +171,7 @@ class Node:
             return self
 
         logger.info(f"Updating node '{self.name}' (ID: {self.node_id})")
-        data = await self._client._request(
+        data = await self._client.request(
             "PUT", f"/api/v1/node/{self.node_id}", json_data=json_data
         )
         # Update local attributes
@@ -196,5 +187,5 @@ class Node:
     async def delete(self) -> None:
         """Delete this node."""
         logger.info(f"Deleting node '{self.name}' (ID: {self.node_id})")
-        await self._client._request("DELETE", f"/api/v1/node/{self.node_id}")
+        await self._client.request("DELETE", f"/api/v1/node/{self.node_id}")
         logger.info(f"Node '{self.name}' deleted successfully")

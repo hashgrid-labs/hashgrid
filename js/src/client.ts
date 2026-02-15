@@ -34,7 +34,7 @@ export class Hashgrid {
     return headers;
   }
 
-  async _request(
+  async request(
     method: string,
     endpoint: string,
     params?: Record<string, any>,
@@ -148,13 +148,81 @@ export class Hashgrid {
     }
   }
 
+  async *stream(
+    method: string,
+    endpoint: string,
+    params?: Record<string, any>,
+    json_data?: any
+  ): AsyncGenerator<string> {
+    const base = this.base_url.endsWith("/") ? this.base_url.slice(0, -1) : this.base_url;
+    const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    let url = `${base}${path}`;
+
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        searchParams.append(key, String(value));
+      });
+      url += `?${searchParams.toString()}`;
+    }
+
+    const headers = this._getHeaders();
+    headers["Accept"] = "text/event-stream";
+
+    const options: {
+      method: string;
+      headers: Record<string, string>;
+      body?: string;
+    } = {
+      method,
+      headers,
+    };
+
+    if (json_data !== undefined) {
+      options.body = JSON.stringify(json_data);
+    }
+
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      throw new HashgridAPIError(`SSE connection failed: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    if (!reader) {
+      throw new HashgridAPIError("Response body is not readable");
+    }
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            yield line.slice(6).trim();
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
   static async connect(
     api_key?: string,
     base_url: string = "https://dna.hashgrid.ai",
     timeout: number = 30000
   ): Promise<Grid> {
     const client = new Hashgrid(api_key, base_url, timeout);
-    const data = await client._request("GET", "/api/v1");
+    const data = await client.request("GET", "/api/v1");
     const grid = new Grid(data.name, data.tick, client);
     return grid;
   }

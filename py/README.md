@@ -48,9 +48,6 @@ The SDK provides the following resources:
 - **`User`** - User data model
 - **`Quota`** - Quota data model
 - **`Message`** - Message for recv/send operations
-  - Constructor: `Message(peer_id, round, message="", score=None)`
-- **`Status`** - Status response from send operations
-  - Properties: `peer_id`, `round`, `success`
 
 ## Example
 
