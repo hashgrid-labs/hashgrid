@@ -27,8 +27,9 @@ async def main():
     # Format: {(node_id, peer_id): [list of messages]}
     memory = defaultdict(list)
 
-    # Listen for ticks and process messages
-    async for tick in grid.listen():
+    # Get ticks and process messages
+    while True:
+        await grid.tick()
         async for node in grid.nodes():
             messages = await node.recv()
             if not messages:

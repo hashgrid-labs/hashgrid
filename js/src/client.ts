@@ -9,17 +9,17 @@ import {
 import { Grid } from "./resources";
 
 export class Hashgrid {
-  private api_key?: string;
-  private base_url: string;
+  private apiKey?: string;
+  private baseUrl: string;
   private timeout: number;
 
   constructor(
-    api_key?: string,
-    base_url: string = "https://dna.hashgrid.ai",
+    apiKey?: string,
+    baseUrl: string = "https://dna.hashgrid.ai",
     timeout: number = 30000
   ) {
-    this.api_key = api_key;
-    this.base_url = base_url.replace(/\/$/, "");
+    this.apiKey = apiKey;
+    this.baseUrl = baseUrl.replace(/\/$/, "");
     this.timeout = timeout;
   }
 
@@ -28,8 +28,8 @@ export class Hashgrid {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
-    if (this.api_key) {
-      headers["Authorization"] = `Bearer ${this.api_key}`;
+    if (this.apiKey) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
     return headers;
   }
@@ -38,13 +38,13 @@ export class Hashgrid {
     method: string,
     endpoint: string,
     params?: Record<string, any>,
-    json_data?: any
+    jsonData?: any
   ): Promise<any> {
     let url: string;
     if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
       url = endpoint;
     } else {
-      const base = this.base_url.endsWith("/") ? this.base_url.slice(0, -1) : this.base_url;
+      const base = this.baseUrl.endsWith("/") ? this.baseUrl.slice(0, -1) : this.baseUrl;
       const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
       url = `${base}${path}`;
     }
@@ -72,8 +72,8 @@ export class Hashgrid {
       signal: controller.signal,
     };
 
-    if (json_data !== undefined) {
-      options.body = JSON.stringify(json_data);
+    if (jsonData !== undefined) {
+      options.body = JSON.stringify(jsonData);
     }
 
     try {
@@ -125,15 +125,32 @@ export class Hashgrid {
         }
       }
 
-      if (!response.body) {
-        return {};
-      }
-
+      // Check Content-Type instead of response.body (response.body is undefined in React Native)
       const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
-        return await response.json();
+        try {
+          const json = await response.json();
+          return json ?? {};
+        } catch (err) {
+          // If JSON parsing fails, return empty object
+          return {};
+        }
+      } else if (contentType) {
+        // Non-JSON content type, return as text
+        try {
+          const text = await response.text();
+          return { content: text };
+        } catch (err) {
+          return { content: "" };
+        }
       } else {
-        return { content: await response.text() };
+        // No content type, try to parse as JSON, fallback to empty object
+        try {
+          const json = await response.json();
+          return json ?? {};
+        } catch (err) {
+          return {};
+        }
       }
     } catch (error) {
       if (
@@ -152,9 +169,9 @@ export class Hashgrid {
     method: string,
     endpoint: string,
     params?: Record<string, any>,
-    json_data?: any
+    jsonData?: any
   ): AsyncGenerator<string> {
-    const base = this.base_url.endsWith("/") ? this.base_url.slice(0, -1) : this.base_url;
+    const base = this.baseUrl.endsWith("/") ? this.baseUrl.slice(0, -1) : this.baseUrl;
     const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     let url = `${base}${path}`;
 
@@ -178,8 +195,8 @@ export class Hashgrid {
       headers,
     };
 
-    if (json_data !== undefined) {
-      options.body = JSON.stringify(json_data);
+    if (jsonData !== undefined) {
+      options.body = JSON.stringify(jsonData);
     }
 
     const response = await fetch(url, options);
@@ -217,14 +234,13 @@ export class Hashgrid {
   }
 
   static async connect(
-    api_key?: string,
-    base_url: string = "https://dna.hashgrid.ai",
+    apiKey?: string,
+    baseUrl: string = "https://dna.hashgrid.ai",
     timeout: number = 30000
   ): Promise<Grid> {
-    const client = new Hashgrid(api_key, base_url, timeout);
+    const client = new Hashgrid(apiKey, baseUrl, timeout);
     const data = await client.request("GET", "/api/v1");
     const grid = new Grid(data.name, data.tick, client);
     return grid;
   }
 }
-

@@ -60,8 +60,9 @@ async def main():
             capacity=10,
         )
 
-    # Listen for ticks and process messages
-    async for tick in grid.listen():
+    # Get ticks and process messages
+    while True:
+        await grid.tick()
         messages = await country_node.recv()
         if not messages:
             continue

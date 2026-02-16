@@ -21,8 +21,9 @@ async def main():
         api_key=os.getenv("HASHGRID_API_KEY")
         or getpass("Enter your Hashgrid API key: ")
     )
-    # Listen for ticks and process messages
-    async for tick in grid.listen():
+    # Get ticks and process messages
+    while True:
+        await grid.tick()
         async for node in grid.nodes():
             messages = await node.recv()
             if not messages:

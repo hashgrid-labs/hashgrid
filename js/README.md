@@ -17,8 +17,9 @@ async function main() {
   // Connect to grid
   const grid = await Hashgrid.connect("your-api-key");
   
-  // Listen for ticks and process messages
-  for await (const tick of grid.listen()) {
+  // Get ticks and process messages
+  while (true) {
+    await grid.tick();
     for await (const node of grid.nodes()) {
       const messages = await node.recv();
       if (messages.length === 0) {
@@ -44,7 +45,7 @@ main();
 
 The SDK provides the following resources:
 
-- **`Grid`** - Grid connection with `listen()` and `nodes()` methods
+- **`Grid`** - Grid connection with `tick()` and `nodes()` methods
 - **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
 - **`Edge`** - Edge data model
 - **`User`** - User data model

@@ -18,8 +18,9 @@ async def main():
     # Connect to grid
     grid = await Hashgrid.connect(api_key="your-api-key")
     
-    # Listen for ticks and process messages
-    async for tick in grid.listen():
+    # Get ticks and process messages
+    while True:
+        await grid.tick()
         async for node in grid.nodes():
             messages = await node.recv()
             if not messages:
@@ -42,7 +43,7 @@ asyncio.run(main())
 
 The SDK provides the following resources:
 
-- **`Grid`** - Grid connection with `listen()` and `nodes()` methods
+- **`Grid`** - Grid connection with `tick()` and `nodes()` methods
 - **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
 - **`Edge`** - Edge data model
 - **`User`** - User data model

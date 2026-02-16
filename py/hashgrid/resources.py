@@ -69,18 +69,38 @@ class Grid:
         self.tick = tick
         self._client = client
 
-    async def listen(self) -> AsyncIterator[int]:
-        """Listen for tick updates via Server-Sent Events. Yields when the tick changes."""
-        logger.info(f"Starting to listen for ticks on grid '{self.name}' via SSE")
-        async for data in self._client.stream("GET", "/api/v1/listen"):
-            try:
-                tick = int(data)
-                if tick != self.tick:
-                    logger.info(f"Tick updated: {self.tick} -> {tick}")
-                    self.tick = tick
-                    yield tick
-            except ValueError:
-                logger.warning(f"Invalid tick value in SSE: {data}")
+    async def me(self) -> User:
+        """Get the authenticated user's information."""
+        logger.info("Fetching user information")
+        data = await self._client.request("GET", "/api/v1/me")
+        user = User(
+            user_id=data["user_id"],
+            name=data["name"],
+            is_superuser=data.get("is_superuser", False),
+            quota_id=data["quota_id"],
+        )
+        logger.info(f"Fetched user '{user.name}' (ID: {user.user_id})")
+        return user
+
+    async def quota(self) -> Quota:
+        """Get the authenticated user's quota information."""
+        logger.info("Fetching quota information")
+        data = await self._client.request("GET", "/api/v1/quota")
+        quota = Quota(
+            quota_id=data["quota_id"],
+            name=data["name"],
+            capacity=data["capacity"],
+        )
+        logger.info(f"Fetched quota '{quota.name}' with capacity {quota.capacity}")
+        return quota
+
+    async def tick(self) -> int:
+        """Get the next tick update. Returns the new tick value."""
+        data = await self._client.request("GET", "/api/v1/tick", params={"tick": self.tick})
+        new_tick = int(data) if isinstance(data, (int, str)) else data.get("tick", self.tick)
+        logger.info(f"Tick updated: {self.tick} -> {new_tick}")
+        self.tick = new_tick
+        return new_tick
 
     async def nodes(self) -> AsyncIterator["Node"]:
         """Iterate over all nodes owned by the authenticated user."""
@@ -105,14 +125,14 @@ class Node:
     def __init__(
         self,
         node_id: str,
-        owner_id: str,
+        user_id: str,
         name: str,
         message: str,
         capacity: int,
         client: "Hashgrid",
     ):
         self.node_id = node_id
-        self.owner_id = owner_id
+        self.user_id = user_id
         self.name = name
         self.message = message
         self.capacity = capacity

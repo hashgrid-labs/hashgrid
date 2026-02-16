@@ -9,39 +9,38 @@ export class HashgridError extends Error {
 }
 
 export class HashgridAPIError extends HashgridError {
-  status_code?: number;
+  statusCode?: number;
   response?: Response;
 
-  constructor(message: string, status_code?: number, response?: Response) {
+  constructor(message: string, statusCode?: number, response?: Response) {
     super(message);
     this.name = "HashgridAPIError";
-    this.status_code = status_code;
+    this.statusCode = statusCode;
     this.response = response;
     Object.setPrototypeOf(this, HashgridAPIError.prototype);
   }
 }
 
 export class HashgridAuthenticationError extends HashgridAPIError {
-  constructor(message: string, status_code?: number, response?: Response) {
-    super(message, status_code, response);
+  constructor(message: string, statusCode?: number, response?: Response) {
+    super(message, statusCode, response);
     this.name = "HashgridAuthenticationError";
     Object.setPrototypeOf(this, HashgridAuthenticationError.prototype);
   }
 }
 
 export class HashgridNotFoundError extends HashgridAPIError {
-  constructor(message: string, status_code?: number, response?: Response) {
-    super(message, status_code, response);
+  constructor(message: string, statusCode?: number, response?: Response) {
+    super(message, statusCode, response);
     this.name = "HashgridNotFoundError";
     Object.setPrototypeOf(this, HashgridNotFoundError.prototype);
   }
 }
 
 export class HashgridValidationError extends HashgridAPIError {
-  constructor(message: string, status_code?: number, response?: Response) {
-    super(message, status_code, response);
+  constructor(message: string, statusCode?: number, response?: Response) {
+    super(message, statusCode, response);
     this.name = "HashgridValidationError";
     Object.setPrototypeOf(this, HashgridValidationError.prototype);
   }
 }
-

@@ -3,74 +3,74 @@
 import { Hashgrid } from "./client";
 
 export class User {
-  user_id: string;
+  userId: string;
   name: string;
-  is_superuser: boolean;
-  quota_id: string;
+  isSuperuser: boolean;
+  quotaId: string;
 
   constructor(
-    user_id: string,
+    userId: string,
     name: string,
-    is_superuser: boolean,
-    quota_id: string
+    isSuperuser: boolean,
+    quotaId: string
   ) {
-    this.user_id = user_id;
+    this.userId = userId;
     this.name = name;
-    this.is_superuser = is_superuser;
-    this.quota_id = quota_id;
+    this.isSuperuser = isSuperuser;
+    this.quotaId = quotaId;
   }
 }
 
 export class Quota {
-  quota_id: string;
+  quotaId: string;
   name: string;
   capacity: number;
 
-  constructor(quota_id: string, name: string, capacity: number) {
-    this.quota_id = quota_id;
+  constructor(quotaId: string, name: string, capacity: number) {
+    this.quotaId = quotaId;
     this.name = name;
     this.capacity = capacity;
   }
 }
 
 export class Edge {
-  node_id: string;
-  peer_id: string;
-  recv_message: string;
-  send_message: string | null;
+  nodeId: string;
+  peerId: string;
+  recvMessage: string;
+  sendMessage: string | null;
   score: number | null;
   round: number;
 
   constructor(
-    node_id: string,
-    peer_id: string,
-    recv_message: string,
-    send_message: string | null,
+    nodeId: string,
+    peerId: string,
+    recvMessage: string,
+    sendMessage: string | null,
     score: number | null,
     round: number
   ) {
-    this.node_id = node_id;
-    this.peer_id = peer_id;
-    this.recv_message = recv_message;
-    this.send_message = send_message;
+    this.nodeId = nodeId;
+    this.peerId = peerId;
+    this.recvMessage = recvMessage;
+    this.sendMessage = sendMessage;
     this.score = score;
     this.round = round;
   }
 }
 
 export class Message {
-  peer_id: string;
+  peerId: string;
   round: number;
   message: string;
   score: number | null;
 
   constructor(
-    peer_id: string,
+    peerId: string,
     round: number,
     message: string = "",
     score: number | null = null
   ) {
-    this.peer_id = peer_id;
+    this.peerId = peerId;
     this.round = round;
     this.message = message;
     this.score = score;
@@ -78,12 +78,12 @@ export class Message {
 }
 
 export class Status {
-  peer_id: string;
+  peerId: string;
   round: number;
   success: boolean;
 
-  constructor(peer_id: string, round: number, success: boolean) {
-    this.peer_id = peer_id;
+  constructor(peerId: string, round: number, success: boolean) {
+    this.peerId = peerId;
     this.round = round;
     this.success = success;
   }
@@ -91,31 +91,49 @@ export class Status {
 
 export class Grid {
   name: string;
-  tick: number;
+  currentTick: number;
   private _client: Hashgrid;
 
   constructor(name: string, tick: number, client: Hashgrid) {
     this.name = name;
-    this.tick = tick;
+    this.currentTick = tick;
     this._client = client;
   }
 
-  async *listen(): AsyncGenerator<number> {
-    for await (const data of this._client.stream("GET", "/api/v1/listen")) {
-      const tick = parseInt(data, 10);
-      if (!isNaN(tick) && tick !== this.tick) {
-        this.tick = tick;
-        yield tick;
-      }
+  async me(): Promise<User> {
+    const data = await this._client.request("GET", "/api/v1/me");
+    return new User(
+      data.user_id || data.userId,
+      data.name,
+      data.is_superuser || data.isSuperuser || false,
+      data.quota_id || data.quotaId
+    );
+  }
+
+  async quota(): Promise<Quota> {
+    const data = await this._client.request("GET", "/api/v1/quota");
+    return new Quota(
+      data.quota_id || data.quotaId,
+      data.name,
+      data.capacity
+    );
+  }
+
+  async tick(): Promise<number> {
+    const data = await this._client.request("GET", "/api/v1/tick", { tick: this.currentTick });
+    const newTick = typeof data === "number" ? data : parseInt(String(data), 10);
+    if (!isNaN(newTick)) {
+      this.currentTick = newTick;
     }
+    return newTick;
   }
 
   async *nodes(): AsyncGenerator<Node> {
     const data = await this._client.request("GET", "/api/v1/node");
     for (const item of data) {
       yield new Node(
-        item.node_id,
-        item.owner_id,
+        item.node_id || item.nodeId,
+        item.user_id || item.userId,
         item.name,
         item.message,
         item.capacity,
@@ -124,16 +142,20 @@ export class Grid {
     }
   }
 
-  async create_node(
-    name: string,
-    message: string = "",
-    capacity: number = 100
-  ): Promise<Node> {
-    const json_data = { name, message, capacity };
-    const data = await this._client.request("POST", "/api/v1/node", undefined, json_data);
+  async createNode(params: {
+    name: string;
+    message?: string;
+    capacity?: number;
+  }): Promise<Node> {
+    const jsonData = {
+      name: params.name,
+      message: params.message ?? "",
+      capacity: params.capacity ?? 100,
+    };
+    const data = await this._client.request("POST", "/api/v1/node", undefined, jsonData);
     return new Node(
-      data.node_id,
-      data.owner_id,
+      data.node_id || data.nodeId,
+      data.user_id || data.userId,
       data.name,
       data.message,
       data.capacity,
@@ -143,23 +165,23 @@ export class Grid {
 }
 
 export class Node {
-  node_id: string;
-  owner_id: string;
+  nodeId: string;
+  userId: string;
   name: string;
   message: string;
   capacity: number;
   private _client: Hashgrid;
 
   constructor(
-    node_id: string,
-    owner_id: string,
+    nodeId: string,
+    userId: string,
     name: string,
     message: string,
     capacity: number,
     client: Hashgrid
   ) {
-    this.node_id = node_id;
-    this.owner_id = owner_id;
+    this.nodeId = nodeId;
+    this.userId = userId;
     this.name = name;
     this.message = message;
     this.capacity = capacity;
@@ -169,18 +191,18 @@ export class Node {
   async recv(): Promise<Message[]> {
     const data = await this._client.request(
       "GET",
-      `/api/v1/node/${this.node_id}/recv`
+      `/api/v1/node/${this.nodeId}/recv`
     );
     return data.map(
       (item: any) =>
-        new Message(item.peer_id, item.round, item.message, item.score ?? null)
+        new Message(item.peer_id || item.peerId, item.round, item.message, item.score ?? null)
     );
   }
 
   async send(replies: Message[]): Promise<Message[]> {
-    const json_data = replies.map((msg) => {
+    const jsonData = replies.map((msg) => {
       const obj: any = {
-        peer_id: msg.peer_id,
+        peer_id: msg.peerId,
         message: msg.message,
         round: msg.round,
       };
@@ -191,35 +213,35 @@ export class Node {
     });
     const data = await this._client.request(
       "POST",
-      `/api/v1/node/${this.node_id}/send`,
+      `/api/v1/node/${this.nodeId}/send`,
       undefined,
-      json_data
+      jsonData
     );
     return data.map(
       (item: any) =>
-        new Message(item.peer_id, item.round, item.message, item.score ?? null)
+        new Message(item.peer_id || item.peerId, item.round, item.message, item.score ?? null)
     );
   }
 
-  async update(
-    name?: string,
-    message?: string,
-    capacity?: number
-  ): Promise<Node> {
-    const json_data: any = {};
-    if (name !== undefined) json_data.name = name;
-    if (message !== undefined) json_data.message = message;
-    if (capacity !== undefined) json_data.capacity = capacity;
+  async update(params: {
+    name?: string;
+    message?: string;
+    capacity?: number;
+  }): Promise<Node> {
+    const jsonData: any = {};
+    if (params.name !== undefined) jsonData.name = params.name;
+    if (params.message !== undefined) jsonData.message = params.message;
+    if (params.capacity !== undefined) jsonData.capacity = params.capacity;
 
-    if (Object.keys(json_data).length === 0) {
+    if (Object.keys(jsonData).length === 0) {
       return this;
     }
 
     const data = await this._client.request(
       "PUT",
-      `/api/v1/node/${this.node_id}`,
+      `/api/v1/node/${this.nodeId}`,
       undefined,
-      json_data
+      jsonData
     );
 
     // Update local attributes
@@ -231,7 +253,6 @@ export class Node {
   }
 
   async delete(): Promise<void> {
-    await this._client.request("DELETE", `/api/v1/node/${this.node_id}`);
+    await this._client.request("DELETE", `/api/v1/node/${this.nodeId}`);
   }
 }
-

@@ -48,8 +48,9 @@ async def main():
         response_format=AgentResponse.model_json_schema(),
     )
 
-    # Listen for ticks and process messages
-    async for tick in grid.listen():
+    # Get ticks and process messages
+    while True:
+        await grid.tick()
         async for node in grid.nodes():
             print("Node=", node)
             messages = await node.recv()
