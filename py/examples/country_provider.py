@@ -57,7 +57,6 @@ async def main():
         country_node = await grid.create_node(
             "country-provider",
             "I will provide country information. Just send me a country name (e.g., France, Japan, Brazil).",
-            capacity=10,
         )
 
     # Get ticks and process messages

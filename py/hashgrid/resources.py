@@ -27,7 +27,7 @@ class Quota:
 
     quota_id: str
     name: str
-    capacity: int
+    size: int
 
 
 @dataclass
@@ -89,15 +89,19 @@ class Grid:
         quota = Quota(
             quota_id=data["quota_id"],
             name=data["name"],
-            capacity=data["capacity"],
+            size=data["size"],
         )
-        logger.info(f"Fetched quota '{quota.name}' with capacity {quota.capacity}")
+        logger.info(f"Fetched quota '{quota.name}' with size {quota.size}")
         return quota
 
     async def tick(self) -> int:
         """Get the next tick update. Returns the new tick value."""
-        data = await self._client.request("GET", "/api/v1/tick", params={"tick": self.tick})
-        new_tick = int(data) if isinstance(data, (int, str)) else data.get("tick", self.tick)
+        data = await self._client.request(
+            "GET", "/api/v1/tick", params={"tick": self.tick}
+        )
+        new_tick = (
+            int(data) if isinstance(data, (int, str)) else data.get("tick", self.tick)
+        )
         logger.info(f"Tick updated: {self.tick} -> {new_tick}")
         self.tick = new_tick
         return new_tick
@@ -109,11 +113,9 @@ class Grid:
             node = Node(**item, client=self._client)
             yield node
 
-    async def create_node(
-        self, name: str, message: str = "", capacity: int = 100
-    ) -> "Node":
+    async def create_node(self, name: str, message: str = "", size: int = 1) -> "Node":
         """Create a new node."""
-        json_data = {"name": name, "message": message, "capacity": capacity}
+        json_data = {"name": name, "message": message, "size": size}
         data = await self._client.request("POST", "/api/v1/node", json_data=json_data)
         logger.info(f"Created node '{name}' (ID: {data['node_id']})")
         return Node(**data, client=self._client)
@@ -128,14 +130,14 @@ class Node:
         user_id: str,
         name: str,
         message: str,
-        capacity: int,
+        size: int,
         client: "Hashgrid",
     ):
         self.node_id = node_id
         self.user_id = user_id
         self.name = name
         self.message = message
-        self.capacity = capacity
+        self.size = size
         self._client = client
 
     async def recv(self) -> List[Message]:
@@ -175,16 +177,16 @@ class Node:
         self,
         name: Optional[str] = None,
         message: Optional[str] = None,
-        capacity: Optional[int] = None,
+        size: Optional[int] = None,
     ) -> "Node":
-        """Update this node's name, message, and/or capacity."""
+        """Update this node's name, message, and/or size."""
         json_data = {}
         if name is not None:
             json_data["name"] = name
         if message is not None:
             json_data["message"] = message
-        if capacity is not None:
-            json_data["capacity"] = capacity
+        if size is not None:
+            json_data["size"] = size
 
         if not json_data:
             logger.warning("No fields to update")
@@ -199,8 +201,8 @@ class Node:
             self.name = data["name"]
         if "message" in data:
             self.message = data["message"]
-        if "capacity" in data:
-            self.capacity = data["capacity"]
+        if "size" in data:
+            self.size = data["size"]
         logger.info(f"Node '{self.name}' updated successfully")
         return self
 

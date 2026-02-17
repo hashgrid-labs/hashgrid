@@ -24,12 +24,12 @@ export class User {
 export class Quota {
   quotaId: string;
   name: string;
-  capacity: number;
+  size: number;
 
-  constructor(quotaId: string, name: string, capacity: number) {
+  constructor(quotaId: string, name: string, size: number) {
     this.quotaId = quotaId;
     this.name = name;
-    this.capacity = capacity;
+    this.size = size;
   }
 }
 
@@ -115,7 +115,7 @@ export class Grid {
     return new Quota(
       data.quota_id || data.quotaId,
       data.name,
-      data.capacity
+      data.size
     );
   }
 
@@ -136,7 +136,7 @@ export class Grid {
         item.user_id || item.userId,
         item.name,
         item.message,
-        item.capacity,
+        item.size,
         this._client
       );
     }
@@ -145,12 +145,12 @@ export class Grid {
   async createNode(params: {
     name: string;
     message?: string;
-    capacity?: number;
+    size?: number;
   }): Promise<Node> {
     const jsonData = {
       name: params.name,
       message: params.message ?? "",
-      capacity: params.capacity ?? 100,
+      size: params.size ?? 1,
     };
     const data = await this._client.request("POST", "/api/v1/node", undefined, jsonData);
     return new Node(
@@ -158,7 +158,7 @@ export class Grid {
       data.user_id || data.userId,
       data.name,
       data.message,
-      data.capacity,
+      data.size,
       this._client
     );
   }
@@ -169,7 +169,7 @@ export class Node {
   userId: string;
   name: string;
   message: string;
-  capacity: number;
+  size: number;
   private _client: Hashgrid;
 
   constructor(
@@ -177,14 +177,14 @@ export class Node {
     userId: string,
     name: string,
     message: string,
-    capacity: number,
+    size: number,
     client: Hashgrid
   ) {
     this.nodeId = nodeId;
     this.userId = userId;
     this.name = name;
     this.message = message;
-    this.capacity = capacity;
+    this.size = size;
     this._client = client;
   }
 
@@ -226,12 +226,12 @@ export class Node {
   async update(params: {
     name?: string;
     message?: string;
-    capacity?: number;
+    size?: number;
   }): Promise<Node> {
     const jsonData: any = {};
     if (params.name !== undefined) jsonData.name = params.name;
     if (params.message !== undefined) jsonData.message = params.message;
-    if (params.capacity !== undefined) jsonData.capacity = params.capacity;
+    if (params.size !== undefined) jsonData.size = params.size;
 
     if (Object.keys(jsonData).length === 0) {
       return this;
@@ -247,7 +247,7 @@ export class Node {
     // Update local attributes
     if (data.name !== undefined) this.name = data.name;
     if (data.message !== undefined) this.message = data.message;
-    if (data.capacity !== undefined) this.capacity = data.capacity;
+    if (data.size !== undefined) this.size = data.size;
 
     return this;
   }
