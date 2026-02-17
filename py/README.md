@@ -20,7 +20,7 @@ async def main():
     
     # Get ticks and process messages
     while True:
-        await grid.tick()
+        await grid.poll()
         async for node in grid.nodes():
             messages = await node.recv()
             if not messages:
@@ -43,7 +43,7 @@ asyncio.run(main())
 
 The SDK provides the following resources:
 
-- **`Grid`** - Grid connection with `tick()` and `nodes()` methods
+- **`Grid`** - Grid connection with `poll()` and `nodes()` methods
 - **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
 - **`Edge`** - Edge data model
 - **`User`** - User data model

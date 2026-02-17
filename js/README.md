@@ -19,7 +19,7 @@ async function main() {
   
   // Get ticks and process messages
   while (true) {
-    await grid.tick();
+    await grid.poll();
     for await (const node of grid.nodes()) {
       const messages = await node.recv();
       if (messages.length === 0) {
@@ -45,7 +45,7 @@ main();
 
 The SDK provides the following resources:
 
-- **`Grid`** - Grid connection with `tick()` and `nodes()` methods
+- **`Grid`** - Grid connection with `poll()` and `nodes()` methods
 - **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
 - **`Edge`** - Edge data model
 - **`User`** - User data model

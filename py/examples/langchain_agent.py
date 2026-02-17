@@ -50,7 +50,7 @@ async def main():
 
     # Get ticks and process messages
     while True:
-        await grid.tick()
+        await grid.poll()
         async for node in grid.nodes():
             print("Node=", node)
             messages = await node.recv()

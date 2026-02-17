@@ -23,7 +23,7 @@ async def main():
     )
     # Get ticks and process messages
     while True:
-        await grid.tick()
+        await grid.poll()
         async for node in grid.nodes():
             messages = await node.recv()
             if not messages:

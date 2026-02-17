@@ -94,11 +94,9 @@ class Grid:
         logger.info(f"Fetched quota '{quota.name}' with size {quota.size}")
         return quota
 
-    async def tick(self) -> int:
-        """Get the next tick update. Returns the new tick value."""
-        data = await self._client.request(
-            "GET", "/api/v1/tick", params={"tick": self.tick}
-        )
+    async def poll(self) -> int:
+        """Poll for the next tick update. Returns the new tick value."""
+        data = await self._client.request("GET", "/api/v1/poll")
         new_tick = (
             int(data) if isinstance(data, (int, str)) else data.get("tick", self.tick)
         )

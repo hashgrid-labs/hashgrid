@@ -91,12 +91,12 @@ export class Status {
 
 export class Grid {
   name: string;
-  currentTick: number;
+  tick: number;
   private _client: Hashgrid;
 
   constructor(name: string, tick: number, client: Hashgrid) {
     this.name = name;
-    this.currentTick = tick;
+    this.tick = tick;
     this._client = client;
   }
 
@@ -119,11 +119,11 @@ export class Grid {
     );
   }
 
-  async tick(): Promise<number> {
-    const data = await this._client.request("GET", "/api/v1/tick", { tick: this.currentTick });
+  async poll(): Promise<number> {
+    const data = await this._client.request("GET", "/api/v1/poll");
     const newTick = typeof data === "number" ? data : parseInt(String(data), 10);
     if (!isNaN(newTick)) {
-      this.currentTick = newTick;
+      this.tick = newTick;
     }
     return newTick;
   }
