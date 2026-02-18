@@ -105,18 +105,19 @@ server.registerTool(
 server.registerTool(
   "hashgrid_whoami",
   {
-    description: "Show current user identity and quota information.",
+    description: "Show current user identity and quota. The quota capacity is the maximum SUM of all your node capacities — always use it to the max for the most connections.",
   },
   async () => {
     try {
       const grid = state.requireGrid();
       const [user, quota] = await Promise.all([grid.me(), grid.quota()]);
+      const usedCapacity = [...state.nodes.values()].reduce((sum, n) => sum + n.capacity, 0);
       return {
         content: [{
           type: "text",
           text: [
             `User: ${user.name} (${user.userId})`,
-            `Quota: ${quota.name} — capacity ${quota.capacity}`,
+            `Quota: ${quota.name} — capacity ${usedCapacity}/${quota.capacity} used`,
           ].join("\n"),
         }],
       };
@@ -132,16 +133,21 @@ server.registerTool(
 server.registerTool(
   "hashgrid_create_node",
   {
-    description: "Create a new node on the grid. The message is your init message — describe what you're looking for so the DNA matching engine can find good peers.",
+    description: "Create a new node on the grid. The message is your init message — describe what you're looking for so the DNA matching engine can find good peers. Your account has a quota (check with hashgrid_whoami) which is the maximum SUM of all node capacities. Always maximize capacity usage — if you have one node, give it the full quota. If capacity is omitted, this tool auto-assigns your remaining quota.",
     inputSchema: z.object({
       name: z.string().describe("Human-readable name for this node"),
       message: z.string().describe("Init message: describe what you offer and what you're looking for. This is what peers see and what DNA uses to match you."),
-      capacity: z.number().optional().describe("Max concurrent connections (default 1)"),
+      capacity: z.number().optional().describe("Max concurrent connections for this node. Omit to auto-use remaining quota capacity."),
     }),
   },
   async ({ name, message, capacity }) => {
     try {
       const grid = state.requireGrid();
+      if (capacity === undefined) {
+        const quota = await grid.quota();
+        const usedCapacity = [...state.nodes.values()].reduce((sum, n) => sum + n.capacity, 0);
+        capacity = Math.max(1, quota.capacity - usedCapacity);
+      }
       const node = await grid.createNode({ name, message, capacity });
       state.nodes.set(node.nodeId, node);
       return {
@@ -151,7 +157,10 @@ server.registerTool(
         }],
       };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      const msg = error.statusCode === 403
+        ? `Error: Quota exceeded. The total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check usage, or reduce capacity.`
+        : `Error: ${error.message}`;
+      return { content: [{ type: "text", text: msg }], isError: true };
     }
   },
 );
@@ -186,7 +195,7 @@ server.registerTool(
 server.registerTool(
   "hashgrid_update_node",
   {
-    description: "Update a node's name, capacity, or init message.",
+    description: "Update a node's name, capacity, or init message. Note: if you get a 403 error when changing capacity, it means the total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check your quota usage.",
     inputSchema: z.object({
       nodeId: z.string().optional().describe("Node ID (omit if you only have one node)"),
       name: z.string().optional().describe("New name for the node"),
@@ -216,7 +225,10 @@ server.registerTool(
 
       return { content: [{ type: "text", text: `Node ${node.nodeId} updated: ${updates.join(", ")}.` }] };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      const msg = error.statusCode === 403
+        ? `Error: Quota exceeded. The total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check usage.`
+        : `Error: ${error.message}`;
+      return { content: [{ type: "text", text: msg }], isError: true };
     }
   },
 );
