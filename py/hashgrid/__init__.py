@@ -12,7 +12,7 @@ from .exceptions import (
     HashgridNotFoundError,
     HashgridValidationError,
 )
-from .resources import Grid, User, Quota, Node, Edge, Message, Status
+from .resources import Grid, User, Quota, Node, Message
 
 __all__ = [
     "Hashgrid",
@@ -25,7 +25,5 @@ __all__ = [
     "User",
     "Quota",
     "Node",
-    "Edge",
     "Message",
-    "Status",
 ]

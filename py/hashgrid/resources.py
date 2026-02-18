@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from typing import Optional, List, AsyncIterator, TYPE_CHECKING
-import asyncio
 import logging
 
 if TYPE_CHECKING:
@@ -27,19 +26,7 @@ class Quota:
 
     quota_id: str
     name: str
-    size: int
-
-
-@dataclass
-class Edge:
-    """Edge resource."""
-
-    node_id: str
-    peer_id: str
-    recv_message: str
-    send_message: Optional[str]
-    score: Optional[float]
-    round: int
+    capacity: int
 
 
 @dataclass
@@ -47,18 +34,8 @@ class Message:
     """Message resource."""
 
     peer_id: str
-    round: int
     message: str = ""
     score: Optional[float] = None
-
-
-@dataclass
-class Status:
-    """Status resource."""
-
-    peer_id: str
-    round: int
-    success: bool
 
 
 class Grid:
@@ -89,9 +66,9 @@ class Grid:
         quota = Quota(
             quota_id=data["quota_id"],
             name=data["name"],
-            size=data["size"],
+            capacity=data["capacity"],
         )
-        logger.info(f"Fetched quota '{quota.name}' with size {quota.size}")
+        logger.info(f"Fetched quota '{quota.name}' with capacity {quota.capacity}")
         return quota
 
     async def poll(self) -> int:
@@ -106,17 +83,28 @@ class Grid:
 
     async def nodes(self) -> AsyncIterator["Node"]:
         """Iterate over all nodes owned by the authenticated user."""
-        data = await self._client.request("GET", "/api/v1/node")
-        for item in data:
-            node = Node(**item, client=self._client)
-            yield node
+        list_data = await self._client.request("GET", "/api/v1/node")
+        for item in list_data:
+            yield Node(
+                node_id=str(item["node_id"]),
+                name=item["name"],
+                capacity=item["capacity"],
+                client=self._client,
+            )
 
-    async def create_node(self, name: str, message: str = "", size: int = 1) -> "Node":
+    async def create_node(
+        self, name: str, message: str = "", capacity: int = 1
+    ) -> "Node":
         """Create a new node."""
-        json_data = {"name": name, "message": message, "size": size}
-        data = await self._client.request("POST", "/api/v1/node", json_data=json_data)
+        body = {"name": name, "message": message, "capacity": capacity}
+        data = await self._client.request("POST", "/api/v1/node", json_data=body)
         logger.info(f"Created node '{name}' (ID: {data['node_id']})")
-        return Node(**data, client=self._client)
+        return Node(
+            node_id=str(data["node_id"]),
+            name=data["name"],
+            capacity=data["capacity"],
+            client=self._client,
+        )
 
 
 class Node:
@@ -125,23 +113,39 @@ class Node:
     def __init__(
         self,
         node_id: str,
-        user_id: str,
         name: str,
-        message: str,
-        size: int,
+        capacity: int,
         client: "Hashgrid",
     ):
         self.node_id = node_id
-        self.user_id = user_id
         self.name = name
-        self.message = message
-        self.size = size
+        self.capacity = capacity
         self._client = client
+
+    async def get_message(self) -> str:
+        """Get the node's init message."""
+        data = await self._client.request("GET", f"/api/v1/node/{self.node_id}/init")
+        return data["message"]
+
+    async def update_message(self, message: str) -> None:
+        """Update the node's init message."""
+        await self._client.request(
+            "PATCH",
+            f"/api/v1/node/{self.node_id}/init",
+            json_data={"message": message},
+        )
 
     async def recv(self) -> List[Message]:
         """Get peers waiting for a response."""
         data = await self._client.request("GET", f"/api/v1/node/{self.node_id}/recv")
-        messages = [Message(**item) for item in data]
+        messages = [
+            Message(
+                peer_id=item["peer_id"],
+                message=item["message"],
+                score=item.get("score"),
+            )
+            for item in data
+        ]
         if messages:
             logger.info(
                 f"Node '{self.name}' received {len(messages)} message(s) from peers"
@@ -153,19 +157,25 @@ class Node:
         logger.info(
             f"Node '{self.name}' sending {len(replies)} reply/replies to peer(s)"
         )
-        json_data = [
+        body = [
             {
                 "peer_id": msg.peer_id,
                 "message": msg.message,
-                "round": msg.round,
                 **({"score": msg.score} if msg.score is not None else {}),
             }
             for msg in replies
         ]
         data = await self._client.request(
-            "POST", f"/api/v1/node/{self.node_id}/send", json_data=json_data
+            "POST", f"/api/v1/node/{self.node_id}/send", json_data=body
         )
-        messages = [Message(**item) for item in data]
+        messages = [
+            Message(
+                peer_id=item["peer_id"],
+                message=item["message"],
+                score=item.get("score"),
+            )
+            for item in data
+        ]
         logger.info(
             f"Node '{self.name}' sent {len(messages)} reply/replies successfully"
         )
@@ -174,34 +184,22 @@ class Node:
     async def update(
         self,
         name: Optional[str] = None,
-        message: Optional[str] = None,
-        size: Optional[int] = None,
+        capacity: Optional[int] = None,
     ) -> "Node":
-        """Update this node's name, message, and/or size."""
-        json_data = {}
-        if name is not None:
-            json_data["name"] = name
-        if message is not None:
-            json_data["message"] = message
-        if size is not None:
-            json_data["size"] = size
-
-        if not json_data:
-            logger.warning("No fields to update")
-            return self
-
-        logger.info(f"Updating node '{self.name}' (ID: {self.node_id})")
-        data = await self._client.request(
-            "PUT", f"/api/v1/node/{self.node_id}", json_data=json_data
-        )
-        # Update local attributes
-        if "name" in data:
-            self.name = data["name"]
-        if "message" in data:
-            self.message = data["message"]
-        if "size" in data:
-            self.size = data["size"]
-        logger.info(f"Node '{self.name}' updated successfully")
+        """Update this node's name and/or capacity. Use update_message() for the init message."""
+        if name is not None or capacity is not None:
+            payload = {}
+            if name is not None:
+                payload["name"] = name
+            if capacity is not None:
+                payload["capacity"] = capacity
+            logger.info(f"Updating node '{self.name}' (ID: {self.node_id})")
+            data = await self._client.request(
+                "PATCH", f"/api/v1/node/{self.node_id}", json_data=payload
+            )
+            self.name = data.get("name", self.name)
+            self.capacity = data.get("capacity", self.capacity)
+            logger.info(f"Node '{self.name}' updated successfully")
         return self
 
     async def delete(self) -> None:

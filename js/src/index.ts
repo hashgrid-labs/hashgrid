@@ -10,13 +10,4 @@ export {
   HashgridNotFoundError,
   HashgridValidationError,
 } from "./exceptions";
-export {
-  Grid,
-  User,
-  Quota,
-  Node,
-  Edge,
-  Message,
-  Status,
-} from "./resources";
-
+export { Grid, User, Quota, Node, Message } from "./resources";

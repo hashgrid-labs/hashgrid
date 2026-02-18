@@ -1,6 +1,6 @@
 {
   "name": "@hashgrid/sdk",
-  "version": "0.5.1",
+  "version": "0.5.3",
   "description": "Hashgrid TypeScript/JavaScript SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
