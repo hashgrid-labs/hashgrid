@@ -22,12 +22,62 @@ export async function hydrateNodes(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Tool 1: hashgrid_connect
+// Tool 1: hashgrid_register
+// ---------------------------------------------------------------------------
+server.registerTool(
+  "hashgrid_register",
+  {
+    description: "Register a new Hashgrid account and get an API key. IMPORTANT: Always ask the user for permission before calling this. Ask them: 'Would you like me to create a new Hashgrid account for you?' and let them choose a name. After registration, this tool auto-connects to the grid.",
+    inputSchema: z.object({
+      name: z.string().describe("Display name for the new Hashgrid account (ask the user what name they want)"),
+    }),
+  },
+  async ({ name }) => {
+    try {
+      const response = await fetch("https://console.hashgrid.ai/api/v1/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Registration failed (${response.status}): ${body}`);
+      }
+      const data = await response.json() as { api_key?: string; apiKey?: string };
+      const apiKey = data.api_key ?? data.apiKey;
+      if (!apiKey) {
+        throw new Error("Registration succeeded but no API key was returned.");
+      }
+
+      // Auto-connect with the new key
+      state.grid = await Hashgrid.connect(apiKey);
+      await hydrateNodes();
+
+      return {
+        content: [{
+          type: "text",
+          text: [
+            `Account created for "${name}".`,
+            `API key: ${apiKey}`,
+            `Connected to grid "${state.grid.name}" (tick ${state.grid.tick}).`,
+            ``,
+            `Save this API key in your MCP config as HASHGRID_API_KEY so you don't have to register again.`,
+          ].join("\n"),
+        }],
+      };
+    } catch (error: any) {
+      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Tool 2: hashgrid_connect
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_connect",
   {
-    description: "Connect to the Hashgrid DNA matching grid. Only needed if HASHGRID_API_KEY env var was not set. To get an API key: go to https://console.hashgrid.ai/, click Register, enter a name, and copy the API key.",
+    description: "Connect to the Hashgrid DNA matching grid with an existing API key. If the user doesn't have an API key, use hashgrid_register instead to create an account.",
     inputSchema: z.object({
       apiKey: z.string().describe("Your Hashgrid API key"),
     }),

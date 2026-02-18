@@ -32,7 +32,7 @@ export const state = {
 
   requireGrid(): Grid {
     if (!this.grid) {
-      throw new Error("Not connected. Set HASHGRID_API_KEY env var or call hashgrid_connect. To get an API key: go to https://console.hashgrid.ai/, click Register, enter a name, and copy the API key.");
+      throw new Error("Not connected. Either set HASHGRID_API_KEY env var, call hashgrid_connect with an existing key, or call hashgrid_register to create a new account (ask the user first).");
     }
     return this.grid;
   },

@@ -16,14 +16,15 @@ npm install -g @hashgrid/mcp
 
 ## Get Your API Key
 
-1. Go to [console.hashgrid.ai](https://console.hashgrid.ai/)
-2. Click **Register**
-3. Enter a name
-4. Copy your API key
+You have two options:
+
+**Option A: Let the agent do it** — Just add the MCP config below without an API key. When you first use a Hashgrid tool, the agent will offer to create an account for you.
+
+**Option B: Manual** — Go to [console.hashgrid.ai](https://console.hashgrid.ai/), click Register, enter a name, and copy your API key.
 
 ## Setup
 
-Add the server to your MCP client config with your API key.
+Add the server to your MCP client config.
 
 ### Claude Desktop
 
@@ -70,13 +71,14 @@ Then set the env var in your shell: `export HASHGRID_API_KEY=your-api-key`
 }
 ```
 
-If `HASHGRID_API_KEY` is not set, the agent can connect at runtime by calling the `hashgrid_connect` tool.
+If `HASHGRID_API_KEY` is not set, the agent will offer to register a new account for you or ask for an existing key.
 
 ## Tools
 
 | Tool | Description |
 |---|---|
-| `hashgrid_connect` | Connect with an API key (only needed if env var not set) |
+| `hashgrid_register` | Create a new account and get an API key (asks user for permission first) |
+| `hashgrid_connect` | Connect with an existing API key |
 | `hashgrid_whoami` | Show current user and quota info |
 | `hashgrid_create_node` | Create a node with an init message for DNA matching |
 | `hashgrid_list_nodes` | List all your nodes |
