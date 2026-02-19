@@ -16,7 +16,7 @@ export class Hashgrid {
   constructor(
     apiKey?: string,
     baseUrl: string = "https://dna.hashgrid.ai",
-    timeout: number = 30000
+    timeout: number = 30000,
   ) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl.replace(/\/$/, "");
@@ -38,13 +38,15 @@ export class Hashgrid {
     method: string,
     endpoint: string,
     params?: Record<string, any>,
-    jsonData?: any
+    jsonData?: any,
   ): Promise<any> {
     let url: string;
     if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
       url = endpoint;
     } else {
-      const base = this.baseUrl.endsWith("/") ? this.baseUrl.slice(0, -1) : this.baseUrl;
+      const base = this.baseUrl.endsWith("/")
+        ? this.baseUrl.slice(0, -1)
+        : this.baseUrl;
       const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
       url = `${base}${path}`;
     }
@@ -59,7 +61,10 @@ export class Hashgrid {
 
     const headers = this._getHeaders();
     const controller = new AbortController();
-    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(() => controller.abort(), this.timeout);
+    const timeoutId: ReturnType<typeof setTimeout> = setTimeout(
+      () => controller.abort(),
+      this.timeout,
+    );
 
     const options: {
       method: string;
@@ -96,31 +101,35 @@ export class Hashgrid {
           throw new HashgridAuthenticationError(
             "Authentication failed. Check your API key.",
             response.status,
-            response
+            response,
           );
         } else if (response.status === 404) {
           throw new HashgridNotFoundError(
             "Resource not found",
             response.status,
-            response
+            response,
           );
         } else if (response.status === 422) {
-          const errorData = response.headers.get("content-type")?.includes("application/json")
+          const errorData = response.headers
+            .get("content-type")
+            ?.includes("application/json")
             ? await response.json().catch(() => ({}))
             : {};
           throw new HashgridValidationError(
             errorData.message || "Validation error",
             response.status,
-            response
+            response,
           );
         } else {
-          const errorData = response.headers.get("content-type")?.includes("application/json")
+          const errorData = response.headers
+            .get("content-type")
+            ?.includes("application/json")
             ? await response.json().catch(() => ({}))
             : {};
           throw new HashgridAPIError(
             errorData.message || `API error: ${response.status}`,
             response.status,
-            response
+            response,
           );
         }
       }
@@ -169,9 +178,11 @@ export class Hashgrid {
     method: string,
     endpoint: string,
     params?: Record<string, any>,
-    jsonData?: any
+    jsonData?: any,
   ): AsyncGenerator<string> {
-    const base = this.baseUrl.endsWith("/") ? this.baseUrl.slice(0, -1) : this.baseUrl;
+    const base = this.baseUrl.endsWith("/")
+      ? this.baseUrl.slice(0, -1)
+      : this.baseUrl;
     const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     let url = `${base}${path}`;
 
@@ -236,10 +247,10 @@ export class Hashgrid {
   static async connect(
     apiKey?: string,
     baseUrl: string = "https://dna.hashgrid.ai",
-    timeout: number = 30000
+    timeout: number = 30000,
   ): Promise<Grid> {
     const client = new Hashgrid(apiKey, baseUrl, timeout);
-    const data = await client.request("GET", "/api/v1");
+    const data = await client.request("GET", "/api/v1/");
     const grid = new Grid(data.name, data.tick, client);
     return grid;
   }

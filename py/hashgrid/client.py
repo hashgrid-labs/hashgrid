@@ -160,7 +160,7 @@ class Hashgrid:
         logger.info(f"Connecting to grid at {base_url}")
         client = cls(api_key=api_key, base_url=base_url, timeout=timeout)
         await client.__aenter__()
-        data = await client.request("GET", "/api/v1")
+        data = await client.request("GET", "/api/v1/")
         grid = Grid(name=data["name"], tick=data["tick"], client=client)
         logger.info(f"Connected to grid '{grid.name}' at tick {grid.tick}")
         return grid
