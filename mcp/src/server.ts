@@ -27,23 +27,34 @@ export async function hydrateNodes(): Promise<void> {
 server.registerTool(
   "hashgrid_register",
   {
-    description: "Register a new Hashgrid account and get an API key. IMPORTANT: Always ask the user for permission before calling this. Ask them: 'Would you like me to create a new Hashgrid account for you?' and let them choose a name. After registration, this tool auto-connects to the grid.",
+    description:
+      "Register a new Hashgrid account and get an API key. IMPORTANT: Always ask the user for permission before calling this. Ask them: 'Would you like me to create a new Hashgrid account for you?' and let them choose a name. After registration, this tool auto-connects to the grid.",
     inputSchema: z.object({
-      name: z.string().describe("Display name for the new Hashgrid account (ask the user what name they want)"),
+      name: z
+        .string()
+        .describe(
+          "Display name for the new Hashgrid account (ask the user what name they want)",
+        ),
     }),
   },
   async ({ name }) => {
     try {
-      const response = await fetch("https://console.hashgrid.ai/api/v1/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
+      const response = await fetch(
+        "https://console.hashgrid.ai/api/v1/register",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        },
+      );
       if (!response.ok) {
         const body = await response.text();
         throw new Error(`Registration failed (${response.status}): ${body}`);
       }
-      const data = await response.json() as { api_key?: string; apiKey?: string };
+      const data = (await response.json()) as {
+        api_key?: string;
+        apiKey?: string;
+      };
       const apiKey = data.api_key ?? data.apiKey;
       if (!apiKey) {
         throw new Error("Registration succeeded but no API key was returned.");
@@ -54,19 +65,24 @@ server.registerTool(
       await hydrateNodes();
 
       return {
-        content: [{
-          type: "text",
-          text: [
-            `Account created for "${name}".`,
-            `API key: ${apiKey}`,
-            `Connected to grid "${state.grid.name}" (tick ${state.grid.tick}).`,
-            ``,
-            `Save this API key in your MCP config as HASHGRID_API_KEY so you don't have to register again.`,
-          ].join("\n"),
-        }],
+        content: [
+          {
+            type: "text",
+            text: [
+              `Account created for "${name}".`,
+              `API key: ${apiKey}`,
+              `Connected to grid "${state.grid.name}" (tick ${state.grid.tick}).`,
+              ``,
+              `Save this API key in your MCP config as HASHGRID_API_KEY so you don't have to register again.`,
+            ].join("\n"),
+          },
+        ],
       };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -77,7 +93,8 @@ server.registerTool(
 server.registerTool(
   "hashgrid_connect",
   {
-    description: "Connect to the Hashgrid DNA matching grid with an existing API key. If the user doesn't have an API key, use hashgrid_register instead to create an account.",
+    description:
+      "Connect to the Hashgrid DNA matching grid with an existing API key. If the user doesn't have an API key, use hashgrid_register instead to create an account.",
     inputSchema: z.object({
       apiKey: z.string().describe("Your Hashgrid API key"),
     }),
@@ -88,13 +105,18 @@ server.registerTool(
       await hydrateNodes();
       const nodeCount = state.nodes.size;
       return {
-        content: [{
-          type: "text",
-          text: `Connected to grid "${state.grid.name}" (tick ${state.grid.tick}). ${nodeCount} node(s) loaded.`,
-        }],
+        content: [
+          {
+            type: "text",
+            text: `Connected to grid "${state.grid.name}" (tick ${state.grid.tick}). ${nodeCount} node(s) loaded.`,
+          },
+        ],
       };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -105,24 +127,33 @@ server.registerTool(
 server.registerTool(
   "hashgrid_whoami",
   {
-    description: "Show current user identity and quota. The quota capacity is the maximum SUM of all your node capacities — always use it to the max for the most connections.",
+    description:
+      "Show current user identity and quota. The quota capacity is the maximum SUM of all your node capacities — always use it to the max for the most connections.",
   },
   async () => {
     try {
       const grid = state.requireGrid();
       const [user, quota] = await Promise.all([grid.me(), grid.quota()]);
-      const usedCapacity = [...state.nodes.values()].reduce((sum, n) => sum + n.capacity, 0);
+      const usedCapacity = [...state.nodes.values()].reduce(
+        (sum, n) => sum + n.capacity,
+        0,
+      );
       return {
-        content: [{
-          type: "text",
-          text: [
-            `User: ${user.name} (${user.userId})`,
-            `Quota: ${quota.name} — capacity ${usedCapacity}/${quota.capacity} used`,
-          ].join("\n"),
-        }],
+        content: [
+          {
+            type: "text",
+            text: [
+              `User: ${user.name} (${user.userId})`,
+              `Quota: ${quota.name} — capacity ${usedCapacity}/${quota.capacity} used`,
+            ].join("\n"),
+          },
+        ],
       };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -133,11 +164,21 @@ server.registerTool(
 server.registerTool(
   "hashgrid_create_node",
   {
-    description: "Create a new node on the grid. The message is your init message — describe what you're looking for so the DNA matching engine can find good peers. Your account has a quota (check with hashgrid_whoami) which is the maximum SUM of all node capacities. Always maximize capacity usage — if you have one node, give it the full quota. If capacity is omitted, this tool auto-assigns your remaining quota.",
+    description:
+      "Create a new node on the grid. The message is your init message — describe what you're looking for so the DNA matching engine can find good peers. Your account has a quota (check with hashgrid_whoami) which is the maximum SUM of all node capacities. Always maximize capacity usage — if you have one node, give it the full quota. If capacity is omitted, this tool auto-assigns your remaining quota.",
     inputSchema: z.object({
       name: z.string().describe("Human-readable name for this node"),
-      message: z.string().describe("Init message: describe what you offer and what you're looking for. This is what peers see and what DNA uses to match you."),
-      capacity: z.number().optional().describe("Max concurrent connections for this node. Omit to auto-use remaining quota capacity."),
+      message: z
+        .string()
+        .describe(
+          "Init message: describe what you offer and what you're looking for. This is what peers see and what DNA uses to match you.",
+        ),
+      capacity: z
+        .number()
+        .optional()
+        .describe(
+          "Max concurrent connections for this node. Omit to auto-use remaining quota capacity.",
+        ),
     }),
   },
   async ({ name, message, capacity }) => {
@@ -145,21 +186,27 @@ server.registerTool(
       const grid = state.requireGrid();
       if (capacity === undefined) {
         const quota = await grid.quota();
-        const usedCapacity = [...state.nodes.values()].reduce((sum, n) => sum + n.capacity, 0);
+        const usedCapacity = [...state.nodes.values()].reduce(
+          (sum, n) => sum + n.capacity,
+          0,
+        );
         capacity = Math.max(1, quota.capacity - usedCapacity);
       }
       const node = await grid.createNode({ name, message, capacity });
       state.nodes.set(node.nodeId, node);
       return {
-        content: [{
-          type: "text",
-          text: `Node created: "${node.name}" (${node.nodeId}), capacity ${node.capacity}.`,
-        }],
+        content: [
+          {
+            type: "text",
+            text: `Node created: "${node.name}" (${node.nodeId}), capacity ${node.capacity}.`,
+          },
+        ],
       };
     } catch (error: any) {
-      const msg = error.statusCode === 403
-        ? `Error: Quota exceeded. The total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check usage, or reduce capacity.`
-        : `Error: ${error.message}`;
+      const msg =
+        error.statusCode === 403
+          ? `Error: Quota exceeded. The total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check usage, or reduce capacity.`
+          : `Error: ${error.message}`;
       return { content: [{ type: "text", text: msg }], isError: true };
     }
   },
@@ -177,14 +224,24 @@ server.registerTool(
     try {
       state.requireGrid();
       if (state.nodes.size === 0) {
-        return { content: [{ type: "text", text: "No nodes. Call hashgrid_create_node to create one." }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No nodes. Call hashgrid_create_node to create one.",
+            },
+          ],
+        };
       }
       const lines = [...state.nodes.values()].map(
         (n) => `- ${n.name} (${n.nodeId}), capacity ${n.capacity}`,
       );
       return { content: [{ type: "text", text: lines.join("\n") }] };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -195,12 +252,22 @@ server.registerTool(
 server.registerTool(
   "hashgrid_update_node",
   {
-    description: "Update a node's name, capacity, or init message. Note: if you get a 403 error when changing capacity, it means the total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check your quota usage.",
+    description:
+      "Update a node's name, capacity, or init message. Note: if you get a 403 error when changing capacity, it means the total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check your quota usage.",
     inputSchema: z.object({
-      nodeId: z.string().optional().describe("Node ID (omit if you only have one node)"),
+      nodeId: z
+        .string()
+        .optional()
+        .describe("Node ID (omit if you only have one node)"),
       name: z.string().optional().describe("New name for the node"),
-      capacity: z.number().optional().describe("New max concurrent connections"),
-      message: z.string().optional().describe("New init message (what peers see and DNA matches on)"),
+      capacity: z
+        .number()
+        .optional()
+        .describe("New max concurrent connections"),
+      message: z
+        .string()
+        .optional()
+        .describe("New init message (what peers see and DNA matches on)"),
     }),
   },
   async ({ nodeId, name, capacity, message }) => {
@@ -208,7 +275,11 @@ server.registerTool(
       const node = state.resolveNode(nodeId);
       const updates: string[] = [];
 
-      if (name !== undefined || capacity !== undefined || message !== undefined) {
+      if (
+        name !== undefined ||
+        capacity !== undefined ||
+        message !== undefined
+      ) {
         await node.update({ name, capacity, message });
         if (name !== undefined) updates.push(`name → "${node.name}"`);
         if (capacity !== undefined) updates.push(`capacity → ${node.capacity}`);
@@ -216,14 +287,29 @@ server.registerTool(
       }
 
       if (updates.length === 0) {
-        return { content: [{ type: "text", text: "Nothing to update. Provide name, capacity, or message." }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Nothing to update. Provide name, capacity, or message.",
+            },
+          ],
+        };
       }
 
-      return { content: [{ type: "text", text: `Node ${node.nodeId} updated: ${updates.join(", ")}.` }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Node ${node.nodeId} updated: ${updates.join(", ")}.`,
+          },
+        ],
+      };
     } catch (error: any) {
-      const msg = error.statusCode === 403
-        ? `Error: Quota exceeded. The total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check usage.`
-        : `Error: ${error.message}`;
+      const msg =
+        error.statusCode === 403
+          ? `Error: Quota exceeded. The total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check usage.`
+          : `Error: ${error.message}`;
       return { content: [{ type: "text", text: msg }], isError: true };
     }
   },
@@ -237,7 +323,10 @@ server.registerTool(
   {
     description: "Delete a node from the grid.",
     inputSchema: z.object({
-      nodeId: z.string().optional().describe("Node ID (omit if you only have one node)"),
+      nodeId: z
+        .string()
+        .optional()
+        .describe("Node ID (omit if you only have one node)"),
     }),
   },
   async ({ nodeId }) => {
@@ -254,7 +343,10 @@ server.registerTool(
       }
       return { content: [{ type: "text", text: `Node ${id} deleted.` }] };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -265,29 +357,40 @@ server.registerTool(
 server.registerTool(
   "hashgrid_poll",
   {
-    description: "Wait for the next matching tick. The grid runs in ticks — poll blocks until a new tick arrives, then you can receive messages. If it times out, just poll again.",
+    description:
+      "Wait for the next matching tick. The grid runs in ticks — poll blocks until a new tick arrives, then you can receive messages. If it times out, just poll again.",
   },
   async () => {
     try {
       const grid = state.requireGrid();
       const tick = await grid.poll();
       return {
-        content: [{
-          type: "text",
-          text: `Tick ${tick}. Call hashgrid_receive to check for connections.`,
-        }],
+        content: [
+          {
+            type: "text",
+            text: `Tick ${tick}. Call hashgrid_receive to check for connections.`,
+          },
+        ],
       };
     } catch (error: any) {
       // Timeouts are normal — the grid just hasn't ticked yet
-      if (error.message?.includes("timeout") || error.message?.includes("Timeout")) {
+      if (
+        error.message?.includes("timeout") ||
+        error.message?.includes("Timeout")
+      ) {
         return {
-          content: [{
-            type: "text",
-            text: "No new tick yet. Grid is still matching. Poll again later.",
-          }],
+          content: [
+            {
+              type: "text",
+              text: "No new tick yet. Grid is still matching. Poll again later.",
+            },
+          ],
         };
       }
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -298,9 +401,13 @@ server.registerTool(
 server.registerTool(
   "hashgrid_receive",
   {
-    description: "Receive messages from peers matched to your node this tick. Returns conversation history (last 5 messages) for each peer.",
+    description:
+      "Receive messages from peers matched to your node this tick. Returns conversation history (last 5 messages) for each peer.",
     inputSchema: z.object({
-      nodeId: z.string().optional().describe("Node ID (omit if you only have one node)"),
+      nodeId: z
+        .string()
+        .optional()
+        .describe("Node ID (omit if you only have one node)"),
     }),
   },
   async ({ nodeId }) => {
@@ -339,13 +446,18 @@ server.registerTool(
       }
 
       return {
-        content: [{
-          type: "text",
-          text: JSON.stringify(result, null, 2),
-        }],
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
       };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -356,16 +468,30 @@ server.registerTool(
 server.registerTool(
   "hashgrid_reply",
   {
-    description: "Reply to peers with messages and scores. The score is CRITICAL — it tells the DNA matching engine how good this connection is, and it learns from your scores to find better matches over time.",
+    description:
+      "Reply to peers with messages and scores. The score is CRITICAL — it tells the DNA matching engine how good this connection is, and it learns from your scores to find better matches over time.",
     inputSchema: z.object({
-      nodeId: z.string().optional().describe("Node ID (omit if you only have one node)"),
-      replies: z.array(z.object({
-        peerId: z.string().describe("The peer ID to reply to (from hashgrid_receive)"),
-        message: z.string().describe("Your reply message to this peer"),
-        score: z.number().min(0).max(1).describe(
-          "CRITICAL: Rate this connection 0.0–1.0. 1.0=perfect match, 0.5=neutral, 0.0=irrelevant. DNA learns from this score to optimize future matches."
-        ),
-      })).describe("Array of replies, one per peer"),
+      nodeId: z
+        .string()
+        .optional()
+        .describe("Node ID (omit if you only have one node)"),
+      replies: z
+        .array(
+          z.object({
+            peerId: z
+              .string()
+              .describe("The peer ID to reply to (from hashgrid_receive)"),
+            message: z.string().describe("Your reply message to this peer"),
+            score: z
+              .number()
+              .min(0)
+              .max(1)
+              .describe(
+                "CRITICAL: Rate this connection 0.0–1.0. 1.0=perfect match, 0.5=neutral, 0.0=irrelevant. DNA learns from this score to optimize future matches.",
+              ),
+          }),
+        )
+        .describe("Array of replies, one per peer"),
     }),
   },
   async ({ nodeId, replies }) => {
@@ -391,13 +517,18 @@ server.registerTool(
       }
 
       return {
-        content: [{
-          type: "text",
-          text: `Sent ${replies.length} repl${replies.length === 1 ? "y" : "ies"}.`,
-        }],
+        content: [
+          {
+            type: "text",
+            text: `Sent ${replies.length} repl${replies.length === 1 ? "y" : "ies"}.`,
+          },
+        ],
       };
     } catch (error: any) {
-      return { content: [{ type: "text", text: `Error: ${error.message}` }], isError: true };
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
     }
   },
 );
@@ -423,11 +554,13 @@ server.registerResource(
         : []),
     ];
     return {
-      contents: [{
-        uri: uri.href,
-        mimeType: "text/plain",
-        text: lines.join("\n"),
-      }],
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "text/plain",
+          text: lines.join("\n"),
+        },
+      ],
     };
   },
 );
@@ -438,17 +571,21 @@ server.registerResource(
 server.registerPrompt(
   "hashgrid-agent",
   {
-    description: "System prompt that teaches an AI agent how to use the Hashgrid DNA matching protocol effectively.",
+    description:
+      "System prompt that teaches an AI agent how to use the Hashgrid DNA matching protocol effectively.",
     argsSchema: {
-      goal: z.string().describe("What you want to achieve through Hashgrid matching"),
+      goal: z
+        .string()
+        .describe("What you want to achieve through Hashgrid matching"),
     },
   },
   ({ goal }) => ({
-    messages: [{
-      role: "user",
-      content: {
-        type: "text",
-        text: `You are an AI agent connected to the Hashgrid DNA matching grid. Your goal: ${goal}
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `You are an AI agent connected to the Hashgrid DNA matching grid. Your goal: ${goal}
 
 ## How Hashgrid DNA Works
 
@@ -485,7 +622,8 @@ The score you give each connection is how DNA learns. It directly affects future
 - recv() only returns messages from the current tick, so always call receive after each poll
 - You can have multiple nodes with different init messages for different purposes
 - The matching engine improves with every score you provide`,
+        },
       },
-    }],
+    ],
   }),
 );
