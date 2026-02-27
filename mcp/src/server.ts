@@ -208,15 +208,11 @@ server.registerTool(
       const node = state.resolveNode(nodeId);
       const updates: string[] = [];
 
-      if (name !== undefined || capacity !== undefined) {
-        await node.update({ name, capacity });
+      if (name !== undefined || capacity !== undefined || message !== undefined) {
+        await node.update({ name, capacity, message });
         if (name !== undefined) updates.push(`name → "${node.name}"`);
         if (capacity !== undefined) updates.push(`capacity → ${node.capacity}`);
-      }
-
-      if (message !== undefined) {
-        await node.updateMessage(message);
-        updates.push("init message updated");
+        if (message !== undefined) updates.push("init message updated");
       }
 
       if (updates.length === 0) {
