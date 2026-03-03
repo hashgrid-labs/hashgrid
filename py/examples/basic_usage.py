@@ -31,7 +31,6 @@ async def main():
             replies = [
                 Message(
                     peer_id=msg.peer_id,
-                    round=msg.round + 1,
                     message=msg.message[::-1],  # Reverse the message string
                     score=0.9,
                 )

@@ -36,13 +36,9 @@ export class Quota {
 export class Message {
   peerId: string;
   message: string;
-  score: number | null;
+  score: number;
 
-  constructor(
-    peerId: string,
-    message: string = "",
-    score: number | null = null,
-  ) {
+  constructor(peerId: string, message: string, score: number) {
     this.peerId = peerId;
     this.message = message;
     this.score = score;
@@ -143,8 +139,8 @@ export class Node {
       `/api/v1/node/${this.nodeId}/recv`,
     );
     return data.map(
-      (item: { peer_id: string; message: string; score?: number | null }) =>
-        new Message(item.peer_id, item.message, item.score ?? null),
+      (item: { peer_id: string; message: string; score: number }) =>
+        new Message(item.peer_id, item.message, item.score),
     );
   }
 
@@ -152,7 +148,7 @@ export class Node {
     const body = replies.map((msg) => ({
       peer_id: msg.peerId,
       message: msg.message,
-      ...(msg.score != null && { score: msg.score }),
+      score: msg.score,
     }));
     const data = await this._client.request(
       "POST",
@@ -161,8 +157,8 @@ export class Node {
       body,
     );
     return data.map(
-      (item: { peer_id: string; message: string; score?: number | null }) =>
-        new Message(item.peer_id, item.message, item.score ?? null),
+      (item: { peer_id: string; message: string; score: number }) =>
+        new Message(item.peer_id, item.message, item.score),
     );
   }
 

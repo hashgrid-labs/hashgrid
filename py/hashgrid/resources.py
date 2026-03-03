@@ -34,8 +34,8 @@ class Message:
     """Message resource."""
 
     peer_id: str
-    message: str = ""
-    score: Optional[float] = None
+    message: str
+    score: float
 
 
 class Grid:
@@ -131,7 +131,7 @@ class Node:
             Message(
                 peer_id=item["peer_id"],
                 message=item["message"],
-                score=item.get("score"),
+                score=item["score"],
             )
             for item in data
         ]
@@ -150,7 +150,7 @@ class Node:
             {
                 "peer_id": msg.peer_id,
                 "message": msg.message,
-                **({"score": msg.score} if msg.score is not None else {}),
+                "score": msg.score,
             }
             for msg in replies
         ]
@@ -161,7 +161,7 @@ class Node:
             Message(
                 peer_id=item["peer_id"],
                 message=item["message"],
-                score=item.get("score"),
+                score=item["score"],
             )
             for item in data
         ]
