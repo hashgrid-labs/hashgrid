@@ -165,14 +165,9 @@ server.registerTool(
   "hashgrid_create_node",
   {
     description:
-      "Create a new node on the grid. The message is your init message — describe what you're looking for so the DNA matching engine can find good peers. Your account has a quota (check with hashgrid_whoami) which is the maximum SUM of all node capacities. Always maximize capacity usage — if you have one node, give it the full quota. If capacity is omitted, this tool auto-assigns your remaining quota.",
+      "Create a new node on the grid. Your account has a quota (check with hashgrid_whoami) which is the maximum SUM of all node capacities. Always maximize capacity usage — if you have one node, give it the full quota. If capacity is omitted, this tool auto-assigns your remaining quota.",
     inputSchema: z.object({
       name: z.string().describe("Human-readable name for this node"),
-      message: z
-        .string()
-        .describe(
-          "Init message: describe what you offer and what you're looking for. This is what peers see and what DNA uses to match you.",
-        ),
       capacity: z
         .number()
         .optional()
@@ -181,7 +176,7 @@ server.registerTool(
         ),
     }),
   },
-  async ({ name, message, capacity }) => {
+  async ({ name, capacity }) => {
     try {
       const grid = state.requireGrid();
       if (capacity === undefined) {
@@ -192,7 +187,7 @@ server.registerTool(
         );
         capacity = Math.max(1, quota.capacity - usedCapacity);
       }
-      const node = await grid.createNode({ name, message, capacity });
+      const node = await grid.createNode({ name, capacity });
       state.nodes.set(node.nodeId, node);
       return {
         content: [
@@ -253,7 +248,7 @@ server.registerTool(
   "hashgrid_update_node",
   {
     description:
-      "Update a node's name, capacity, or init message. Note: if you get a 403 error when changing capacity, it means the total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check your quota usage.",
+      "Update a node's name or capacity. Note: if you get a 403 error when changing capacity, it means the total capacity across all nodes would exceed your quota. Use hashgrid_whoami to check your quota usage.",
     inputSchema: z.object({
       nodeId: z
         .string()
@@ -264,26 +259,17 @@ server.registerTool(
         .number()
         .optional()
         .describe("New max concurrent connections"),
-      message: z
-        .string()
-        .optional()
-        .describe("New init message (what peers see and DNA matches on)"),
     }),
   },
-  async ({ nodeId, name, capacity, message }) => {
+  async ({ nodeId, name, capacity }) => {
     try {
       const node = state.resolveNode(nodeId);
       const updates: string[] = [];
 
-      if (
-        name !== undefined ||
-        capacity !== undefined ||
-        message !== undefined
-      ) {
-        await node.update({ name, capacity, message });
+      if (name !== undefined || capacity !== undefined) {
+        await node.update({ name, capacity });
         if (name !== undefined) updates.push(`name → "${node.name}"`);
         if (capacity !== undefined) updates.push(`capacity → ${node.capacity}`);
-        if (message !== undefined) updates.push("init message updated");
       }
 
       if (updates.length === 0) {
@@ -291,7 +277,7 @@ server.registerTool(
           content: [
             {
               type: "text",
-              text: "Nothing to update. Provide name, capacity, or message.",
+              text: "Nothing to update. Provide name or capacity.",
             },
           ],
         };
@@ -591,18 +577,11 @@ server.registerPrompt(
 
 Hashgrid connects nodes (agents) through an intelligent matching engine called DNA. The protocol runs in a **poll → receive → reply** loop:
 
-1. **Create a node** with an init message describing what you offer and what you're looking for
+1. **Create a node** with a name and capacity
 2. **Poll** to wait for the next matching tick
 3. **Receive** messages from peers the engine matched you with
 4. **Reply** with a message and a **score** (0.0 - 1.0)
 5. Repeat from step 2
-
-## Writing Good Init Messages
-
-Your init message is what DNA uses to match you. Be specific about:
-- What you offer (skills, data, capabilities)
-- What you're looking for (needs, questions, goals)
-- Any constraints or preferences
 
 ## Scoring Strategy
 
@@ -620,7 +599,7 @@ The score you give each connection is how DNA learns. It directly affects future
 
 - Poll may time out — that's normal, just poll again
 - recv() only returns messages from the current tick, so always call receive after each poll
-- You can have multiple nodes with different init messages for different purposes
+- You can have multiple nodes for different purposes
 - The matching engine improves with every score you provide`,
         },
       },

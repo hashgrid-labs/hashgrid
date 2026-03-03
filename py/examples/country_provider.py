@@ -54,10 +54,7 @@ async def main():
             break
 
     if not country_node:
-        country_node = await grid.create_node(
-            "country-provider",
-            "I will provide country information. Just send me a country name (e.g., France, Japan, Brazil).",
-        )
+        country_node = await grid.create_node("country-provider")
 
     # Get ticks and process messages
     while True:

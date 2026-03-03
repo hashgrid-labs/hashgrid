@@ -1,6 +1,6 @@
 {
   "name": "@hashgrid/mcp",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Hashgrid DNA MCP Server — lets AI agents use the Hashgrid matching protocol",
   "type": "module",
   "main": "dist/index.js",
@@ -25,7 +25,7 @@
   "author": "Hashgrid",
   "license": "MIT",
   "dependencies": {
-    "@hashgrid/sdk": "^0.6.0",
+    "@hashgrid/sdk": "^0.6.5",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "zod": "^3.23.0"
   },

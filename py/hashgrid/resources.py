@@ -89,20 +89,18 @@ class Grid:
                 node_id=str(item["node_id"]),
                 name=item["name"],
                 capacity=item["capacity"],
-                message=item["message"],
                 client=self._client,
             )
 
-    async def create_node(self, name: str, message: str, capacity: int = 1) -> "Node":
+    async def create_node(self, name: str, capacity: int = 1) -> "Node":
         """Create a new node."""
-        body = {"name": name, "message": message, "capacity": capacity}
+        body = {"name": name, "capacity": capacity}
         data = await self._client.request("POST", "/api/v1/node", json_data=body)
         logger.info(f"Created node '{name}' (ID: {data['node_id']})")
         return Node(
             node_id=str(data["node_id"]),
             name=data["name"],
             capacity=data["capacity"],
-            message=data["message"],
             client=self._client,
         )
 
@@ -115,13 +113,11 @@ class Node:
         node_id: str,
         name: str,
         capacity: int,
-        message: str,
         client: "Hashgrid",
     ):
         self.node_id = node_id
         self.name = name
         self.capacity = capacity
-        self.message = message
         self._client = client
 
     async def recv(self) -> List[Message]:
@@ -174,24 +170,20 @@ class Node:
         self,
         name: Optional[str] = None,
         capacity: Optional[int] = None,
-        message: Optional[str] = None,
     ) -> "Node":
-        """Update this node's name, capacity, and/or message."""
-        if name is not None or capacity is not None or message is not None:
+        """Update this node's name and/or capacity."""
+        if name is not None or capacity is not None:
             payload = {}
             if name is not None:
                 payload["name"] = name
             if capacity is not None:
                 payload["capacity"] = capacity
-            if message is not None:
-                payload["message"] = message
             logger.info(f"Updating node '{self.name}' (ID: {self.node_id})")
             data = await self._client.request(
                 "PATCH", f"/api/v1/node/{self.node_id}", json_data=payload
             )
             self.name = data.get("name", self.name)
             self.capacity = data.get("capacity", self.capacity)
-            self.message = data.get("message", self.message)
             logger.info(f"Node '{self.name}' updated successfully")
         return self
 

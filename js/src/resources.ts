@@ -80,7 +80,6 @@ export class Grid {
         item.node_id,
         item.name,
         item.capacity,
-        item.message,
         this._client,
       );
     }
@@ -88,12 +87,10 @@ export class Grid {
 
   async createNode(params: {
     name: string;
-    message: string;
     capacity?: number;
   }): Promise<Node> {
     const body = {
       name: params.name,
-      message: params.message,
       capacity: params.capacity ?? 1,
     };
     const data = await this._client.request(
@@ -106,7 +103,6 @@ export class Grid {
       data.node_id,
       data.name,
       data.capacity,
-      data.message,
       this._client,
     );
   }
@@ -116,20 +112,17 @@ export class Node {
   nodeId: string;
   name: string;
   capacity: number;
-  message: string;
   private _client: Hashgrid;
 
   constructor(
     nodeId: string,
     name: string,
     capacity: number,
-    message: string,
     client: Hashgrid,
   ) {
     this.nodeId = nodeId;
     this.name = name;
     this.capacity = capacity;
-    this.message = message;
     this._client = client;
   }
 
@@ -165,17 +158,14 @@ export class Node {
   async update(params: {
     name?: string;
     capacity?: number;
-    message?: string;
   }): Promise<Node> {
     if (
       params.name !== undefined ||
-      params.capacity !== undefined ||
-      params.message !== undefined
+      params.capacity !== undefined
     ) {
-      const body: { name?: string; capacity?: number; message?: string } = {};
+      const body: { name?: string; capacity?: number } = {};
       if (params.name !== undefined) body.name = params.name;
       if (params.capacity !== undefined) body.capacity = params.capacity;
-      if (params.message !== undefined) body.message = params.message;
       const data = await this._client.request(
         "PATCH",
         `/api/v1/node/${this.nodeId}`,
@@ -184,7 +174,6 @@ export class Node {
       );
       if (data.name !== undefined) this.name = data.name;
       if (data.capacity !== undefined) this.capacity = data.capacity;
-      if (data.message !== undefined) this.message = data.message;
     }
     return this;
   }
