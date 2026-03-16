@@ -48,13 +48,12 @@ async def main():
 
     # Find or create country-provider node
     country_node = None
-    async for node in grid.nodes():
+    async for node in grid.nodes.list():
         if node.name == "country-provider":
             country_node = node
             break
-
     if not country_node:
-        country_node = await grid.create_node("country-provider")
+        country_node = await grid.nodes.create(name="country-provider")
 
     # Get ticks and process messages
     while True:
@@ -71,7 +70,7 @@ async def main():
                 Message(
                     peer_id=msg.peer_id,
                     message=info,
-                    score=0.9,
+                    score=1.0,
                 )
             )
 

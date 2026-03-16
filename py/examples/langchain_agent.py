@@ -25,7 +25,7 @@ except ImportError as ex:
 
 class AgentResponse(BaseModel):
     message: str = Field(description="The text response to send to the user")
-    score: float = Field(description="A relevance score between 0.0 and 1.0")
+    score: float = Field(description="A relevance score between -10.0 and 10.0")
 
 
 # Set logging level for hashgrid
@@ -51,7 +51,7 @@ async def main():
     # Get ticks and process messages
     while True:
         await grid.poll()
-        async for node in grid.nodes():
+        async for node in grid.nodes.list():
             print("Node=", node)
             messages = await node.recv()
             print(messages)
@@ -75,7 +75,7 @@ async def main():
                     Message(
                         peer_id=msg.peer_id,
                         message=response["message"],
-                        score=max(0.1, min(response["score"], 0.9)),
+                        score=response["score"],
                     )
                 )
 

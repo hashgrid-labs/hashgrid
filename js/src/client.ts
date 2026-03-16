@@ -5,8 +5,8 @@ import {
   HashgridAuthenticationError,
   HashgridNotFoundError,
   HashgridValidationError,
-} from "./exceptions";
-import { Grid } from "./resources";
+} from "./exceptions.js";
+import { Grid } from "./resources.js";
 
 export class Hashgrid {
   private apiKey?: string;

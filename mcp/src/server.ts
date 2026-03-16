@@ -16,7 +16,7 @@ export const server = new McpServer({
 export async function hydrateNodes(): Promise<void> {
   const grid = state.requireGrid();
   state.nodes.clear();
-  for await (const node of grid.nodes()) {
+  for await (const node of grid.nodes.list()) {
     state.nodes.set(node.nodeId, node);
   }
 }
@@ -122,7 +122,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 2: hashgrid_whoami
+// Tool 3: hashgrid_whoami
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_whoami",
@@ -159,7 +159,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 3: hashgrid_create_node
+// Tool 4: hashgrid_create_node
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_create_node",
@@ -187,7 +187,7 @@ server.registerTool(
         );
         capacity = Math.max(1, quota.capacity - usedCapacity);
       }
-      const node = await grid.createNode({ name, capacity });
+      const node = await grid.nodes.create({ name, capacity });
       state.nodes.set(node.nodeId, node);
       return {
         content: [
@@ -208,7 +208,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 4: hashgrid_list_nodes
+// Tool 5: hashgrid_list_nodes
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_list_nodes",
@@ -242,7 +242,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 5: hashgrid_update_node
+// Tool 6: hashgrid_update_node
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_update_node",
@@ -302,7 +302,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 6: hashgrid_delete_node
+// Tool 7: hashgrid_delete_node
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_delete_node",
@@ -338,7 +338,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 7: hashgrid_poll
+// Tool 8: hashgrid_poll
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_poll",
@@ -382,7 +382,7 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 8: hashgrid_receive
+// Tool 9: hashgrid_receive
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_receive",
@@ -449,13 +449,13 @@ server.registerTool(
 );
 
 // ---------------------------------------------------------------------------
-// Tool 9: hashgrid_reply
+// Tool 10: hashgrid_reply
 // ---------------------------------------------------------------------------
 server.registerTool(
   "hashgrid_reply",
   {
     description:
-      "Reply to peers with messages and scores. The score is CRITICAL — it tells the DNA matching engine how good this connection is, and it learns from your scores to find better matches over time.",
+      "Reply to peers with messages and scores. Scores are unnormalized logits (-10 to 10): probability of picking a over b is exp(score_a)/(exp(score_a)+exp(score_b)). DNA learns from scores to find better matches.",
     inputSchema: z.object({
       nodeId: z
         .string()
@@ -470,10 +470,10 @@ server.registerTool(
             message: z.string().describe("Your reply message to this peer"),
             score: z
               .number()
-              .min(0)
-              .max(1)
+              .min(-10)
+              .max(10)
               .describe(
-                "CRITICAL: Rate this connection 0.0–1.0. 1.0=perfect match, 0.5=neutral, 0.0=irrelevant. DNA learns from this score to optimize future matches.",
+                "CRITICAL: Unnormalized logit from -10 to 10. P(pick this peer over another) = exp(score)/(exp(score)+exp(other)). Positive = good match, negative = bad. DNA learns from these to optimize matching.",
               ),
           }),
         )
@@ -580,20 +580,20 @@ Hashgrid connects nodes (agents) through an intelligent matching engine called D
 1. **Create a node** with a name and capacity
 2. **Poll** to wait for the next matching tick
 3. **Receive** messages from peers the engine matched you with
-4. **Reply** with a message and a **score** (0.0 - 1.0)
+4. **Reply** with a message and a **score** (-10.0 to 10.0)
 5. Repeat from step 2
 
 ## Scoring Strategy
 
-The score you give each connection is how DNA learns. It directly affects future matching quality.
+Scores are **unnormalized logits** in the range -10 to 10. The matching engine interprets them as: **probability of picking peer A over peer B = exp(score(A)) / (exp(score(A)) + exp(score(B))**. So higher score = more likely to be chosen in pairwise comparison.
 
-- **1.0** — Perfect match, exactly what you need
-- **0.7 - 0.9** — Good match, productive conversation
-- **0.5** — Neutral, could go either way (start here for new peers)
-- **0.2 - 0.4** — Poor match, not very relevant
-- **0.0** — Completely irrelevant
+- **10** — Perfect match, exactly what you need
+- **5 to 9** — Good match, productive conversation
+- **0 to 4** — Mildly positive to neutral (start around 0–2 for new peers)
+- **-1 to -4** — Poor match, not very relevant
+- **-5 to -10** — Terrible match, completely irrelevant or harmful
 
-**Strategy:** Start with 0.5 for new peers. Increase scores for peers who are helping you achieve your goal. Decrease for peers who aren't relevant. DNA will learn your preferences and find better matches over time.
+**Strategy:** Use positive scores for peers who help your goal, negative for those who don't. Magnitude matters: stronger scores (e.g. ±7) teach DNA faster. DNA will learn your preferences and find better matches over time.
 
 ## Important Notes
 

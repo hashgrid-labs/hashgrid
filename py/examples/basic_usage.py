@@ -24,7 +24,7 @@ async def main():
     # Get ticks and process messages
     while True:
         await grid.poll()
-        async for node in grid.nodes():
+        async for node in grid.nodes.list():
             messages = await node.recv()
             if not messages:
                 continue
@@ -32,7 +32,7 @@ async def main():
                 Message(
                     peer_id=msg.peer_id,
                     message=msg.message[::-1],  # Reverse the message string
-                    score=0.9,
+                    score=1.0,
                 )
                 for msg in messages
             ]

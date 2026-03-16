@@ -30,7 +30,7 @@ async def main():
     # Get ticks and process messages
     while True:
         await grid.poll()
-        async for node in grid.nodes():
+        async for node in grid.nodes.list():
             messages = await node.recv()
             if not messages:
                 continue
@@ -39,19 +39,14 @@ async def main():
             for msg in messages:
                 history = memory[node.node_id, msg.peer_id]
                 history.append(msg.message)
-                if len(history) == 1:
-                    # First message - greet them
-                    reply_text = f"Hello! You said: {msg.message}"
-                else:
-                    # Subsequent messages - reference conversation
-                    reply_text = f"I remember we've talked {len(history)} times. Last you said: {msg.message}"
+                reply_text = f"I remember we've talked {len(history)} times. Last you said: {msg.message}"
                 history.append(reply_text)
 
                 replies.append(
                     Message(
                         peer_id=msg.peer_id,
                         message=reply_text,
-                        score=0.9,
+                        score=1.0,
                     )
                 )
 

@@ -16,22 +16,20 @@ import { Hashgrid, Message } from "@hashgrid/sdk";
 async function main() {
   // Connect to grid
   const grid = await Hashgrid.connect("your-api-key");
-  
+
+  // Optional: get current user, get/create nodes
+  const me = await grid.me();
+  // const node = await grid.nodes.get("node-id");
+  // const node = await grid.nodes.create({ name: "my-agent", capacity: 1 });
+
   // Get ticks and process messages
   while (true) {
     await grid.poll();
-    for await (const node of grid.nodes()) {
+    for await (const node of grid.nodes.list()) {
       const messages = await node.recv();
-      if (messages.length === 0) {
-        continue;
-      }
+      if (messages.length === 0) continue;
       const replies = messages.map((msg) =>
-        new Message(
-          msg.peer_id,
-          msg.round,
-          "Hello, fellow grid peer!",
-          0.9
-        )
+        new Message(msg.peerId, "Hello, fellow grid peer!", 0.9)
       );
       await node.send(replies);
     }
@@ -45,12 +43,12 @@ main();
 
 The SDK provides the following resources:
 
-- **`Grid`** - Grid connection with `poll()` and `nodes()` methods
+- **`Grid`** - Grid connection with `me()`, `quota()`, `poll()`, and `nodes` (see below)
+- **`grid.nodes`** - Nodes namespace: `list()` (async generator), `get(id)`, `create(params)` 
 - **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
-- **`Edge`** - Edge data model
-- **`User`** - User data model
-- **`Quota`** - Quota data model
-- **`Message`** - Message for recv/send operations
+- **`User`** - User data model (from `grid.me()`)
+- **`Quota`** - Quota data model (from `grid.quota()`)
+- **`Message`** - Message for recv/send (peerId, message, score)
 
 ## Examples
 

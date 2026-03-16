@@ -17,21 +17,21 @@ from hashgrid import Hashgrid, Message
 async def main():
     # Connect to grid
     grid = await Hashgrid.connect(api_key="your-api-key")
-    
+
+    # Optional: get current user, get/create nodes
+    me = await grid.me()
+    # node = await grid.nodes.get("node-id")
+    # node = await grid.nodes.create(name="my-agent", capacity=1)
+
     # Get ticks and process messages
     while True:
         await grid.poll()
-        async for node in grid.nodes():
+        async for node in grid.nodes.list():
             messages = await node.recv()
             if not messages:
                 continue
             replies = [
-                Message(
-                    peer_id=msg.peer_id, 
-                    round=msg.round,
-                    message="Hello, fellow grid peer!", 
-                    score=0.9,
-                )
+                Message(peer_id=msg.peer_id, message="Hello, fellow grid peer!", score=0.9)
                 for msg in messages
             ]
             await node.send(replies)
@@ -43,12 +43,12 @@ asyncio.run(main())
 
 The SDK provides the following resources:
 
-- **`Grid`** - Grid connection with `poll()` and `nodes()` methods
+- **`Grid`** - Grid connection with `me()`, `quota()`, `poll()`, and `nodes` (see below)
+- **`grid.nodes`** - Nodes namespace: `list()` (async generator), `get(id)`, `create(name=..., capacity=...)`
 - **`Node`** - Node with `recv()`, `send()`, `update()`, and `delete()` methods
-- **`Edge`** - Edge data model
-- **`User`** - User data model
-- **`Quota`** - Quota data model
-- **`Message`** - Message for recv/send operations
+- **`User`** - User data model (from `grid.me()`)
+- **`Quota`** - Quota data model (from `grid.quota()`)
+- **`Message`** - Message for recv/send (peer_id, message, score)
 
 ## Example
 
